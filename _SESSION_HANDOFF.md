@@ -1,7 +1,7 @@
 # _SESSION_HANDOFF.md - 30_reproduction 复现项目会话交接
 
 > 本文件是会话交接文档。下次会话从这里开始，能完整恢复到当前状态而不丢任何上下文。
-> 最后更新：2026-05-14（#15 完成）
+> 最后更新：2026-05-14（**16/16 任务完成，首次 commit c3c16af**）
 
 ---
 
@@ -10,9 +10,15 @@
 ```
 继续推进 /Users/y/Research_MEM/30_reproduction/ 复现项目。
 
-请先 cd 到 /Users/y/Research_MEM/30_reproduction/ 让项目 CLAUDE.md 加载，然后阅读 _SESSION_HANDOFF.md（本文件）了解会话交接，再阅读 plan 文件 /Users/y/.claude/plans/users-y-research-mem-00-active-artifact-validated-sedgewick.md 了解完整规划。
+请先 cd 到 /Users/y/Research_MEM/30_reproduction/ 让项目 CLAUDE.md 加载，然后阅读 _SESSION_HANDOFF.md（本文件）了解会话交接。
 
-当前进度：16 个任务完成 4 个（#13 骨架、#1 cp UMC、#6 参数化路径、#15 reproduction/utils/），需要继续 #16 reproduction/configs/ 全部 YAML。请用 TaskList 工具重建任务列表，标记 #13/#1/#6/#15 为 completed，然后开始 #16。
+当前状态：**16/16 本地任务已完成**，首次 commit c3c16af 已落地。
+代码层面就绪：pytest 39 passed / 4 skipped；scripts/aggregate_results.sh 端到端通；orchestrator dry-run 三阶段任务数正确。
+
+下一步候选：
+A. push 到 GitHub yanghuaizhi/MEM_Thesis_Reproduction（用户授权后）
+B. 推进 SSH 容器实验执行（按 docs/04_experiment_protocol.md 8 阶段）
+C. 完善 v9_inference entry（_runner.py 现为 NotImplementedError stub）
 ```
 
 ---
@@ -74,41 +80,47 @@
 
 ---
 
-## 4. 当前实现状态（2026-05-14）
+## 4. 当前实现状态（2026-05-14 — 全部完成）
 
-### 4.1 已完成（4/16 任务）
+### 4.1 已完成（16/16 任务）
 
-| Task | 状态 | 产物 | 行数 |
-|------|------|------|-----|
-| #13 创建项目骨架 | ✓ | 24 子目录 + README.md (4553B) + LICENSE + .gitignore (1854B) + .githooks/pre-commit (executable) + pyproject.toml + environment.yml + data/README.md | ~250 行 |
-| #1 cp UMC 副本 + _legacy_runs 整理 | ✓ | UMC/ 副本（1.9MB，rsync 排除 .ipynb_checkpoints）+ 9 个历史 run_v*.py 移入 _legacy_runs/ + README_UMC.md (124 行) + _legacy_runs/README.md (87 行) | ~211 行新增 |
-| #6 参数化 UMC 训练入口 | ✓ | 新建 `UMC/_paths.py` (131 行) + 修改 7 个文件 (pretrain + 3 train_neu_* + 3 train_sta_*) 路径硬编码 | 131 + ~80 行 diff |
-| #15 reproduction/utils/ 工具模块 | ✓ | `reproduction/__init__.py` + `reproduction/utils/{__init__,seed,gpu,jsonl_log,status}.py`，5 文件 587 行；4 模块均带 `if __name__ == "__main__"` self-check 并通过 | 587 行 |
+| HANDOFF # | 任务 | 产物 |
+|----------|------|------|
+| #13 | 创建项目骨架 | 24 目录 + README/LICENSE/.gitignore/hooks/pyproject |
+| #1  | cp UMC 副本 + _legacy_runs | UMC/ 1.9MB + 9 legacy run + README_UMC.md |
+| #6  | 参数化 UMC 训练入口 | UMC/_paths.py 131 行 + 7 文件 ~80 行 diff |
+| #15 | reproduction/utils/ | seed/gpu/jsonl_log/status (587 行) |
+| #16 | reproduction/configs/ 19 YAML | datasets×3 + methods×11 + experiments×3 + hardware×1 + paths.yaml |
+| #12 | reproduction/orchestrator.py + _runner.py | 主编排 (382 行) + subprocess wrapper |
+| #14 | reproduction/data/ 下载+预处理 | download.py + 3 preprocess + _common.py |
+| #11 | reproduction/analysis/sanity_check.py | M.0 内部质量门（独立审计 99+27+9 runs）|
+| #2  | reproduction/analysis/diff_with_paper.py | P1-P5 + S1-S3 三态评估（不依赖论文 ground truth）|
+| #10 | reproduction/analysis/tables/ | 5 个表格生成器 + _common.py |
+| #3  | reproduction/analysis/figures/ | 4 个图表生成器（matplotlib + placeholder fallback）|
+| #4  | scripts/ 12 个 shell 入口 | setup → smoke → download → preprocess → pretrain → main → v9/v10 → aggregate → artifacts → health → sync |
+| #5  | tests/ pytest 套件 | 7 文件 39 passed + 4 skipped（test_metrics + test_tf32_drift 需 GPU/数据）|
+| #8  | docs/ 11 份文档 | README + 9 编号 + RUNBOOK，1150 行 |
+| #7  | 本地 smoke test + 修 bug | pytest 全过 + bash 12 脚本语法 OK + orchestrator dry-run 三阶段任务数对 + 配置一致性 9 检查全过 |
+| #9  | git init + 首次 commit | c3c16af 提交 166 文件，pre-commit hook 已挂 — **未 push 到 GitHub（待用户授权）**|
 
-**总变更**：约 2,590 行新增 + ~80 行 diff。
+### 4.2 总产物
 
-### 4.2 进行中
+- **reproduction/ Python**: 4,098 行（30 个文件）
+- **tests/**: 675 行（7 个文件，39 passed）
+- **docs/**: 1,150 行（11 个文件）
+- **scripts/**: 238 行（12 个 shell）
+- **configs/**: 550 行（19 个 YAML）
+- **总计**: 6,711 行 + UMC 副本 + 4 个 markdown 表/图占位
 
-无（task #15 刚完成）。
+### 4.3 跑通验证（本地）
 
-### 4.3 待办（12/16 任务，按依赖顺序）
-
-| Task | 估时 | 依赖 | 必读规范 |
-|------|------|------|---------|
-| #16 reproduction/configs/ 全部 YAML | 60-90 min | #15 | plan §C（配置详表）、§B（datasets/methods/experiments）|
-| #12 reproduction/orchestrator.py 编排器 | 1.5-2h | #15, #16 | plan §E.2/§E.3（subprocess 调用 UMC/train_*.py + done.flag + --resume）|
-| #14 reproduction/data/ 下载与预处理 | 60-90 min | #15, #16 | plan §H 阶段 0、data/README.md（USTC + Kaggle 双源）|
-| #11 reproduction/analysis/sanity_check.py | 60-90 min | #15 | plan §A.6.1（M.0 内部质量门，不依赖论文数值）|
-| #2 reproduction/analysis/diff_with_paper.py | 2-3h | #11 | plan §M.2-M.6（四层验证 L1/L2/L3/L4 + 三态评估）|
-| #10 reproduction/analysis/tables/ | 60-90 min | #11 | plan §A.2（每个表的来源映射）|
-| #3 reproduction/analysis/figures/ | 60-90 min | #11 | plan Ch3 图 3-1~3-4 + Ch4 图 4-1~4-2 |
-| #4 scripts/ Shell 入口（12 个）| 90 min | #12, #14 | plan §E.3（11 个 + setup_env + smoke_test）|
-| #5 tests/ 单元 + smoke 测试 | 60-90 min | #15 | plan §M.1（参数化前后输出 1e-6 容差）+ TF32 drift |
-| #8 docs/ 文档（10 份）| 2-3h | 全部完成后 | plan §F、§G、§J、§H |
-| #7 本地 smoke test + 修 bug | 30-60 min | 全部完成 | plan §M.7 |
-| #9 git init + push | 30 min | #7 | plan §K.1 |
-
-**剩余估时合计**：约 13-20 小时纯编码 + 2-3 小时调试 = **3-4 天**。
+```bash
+cd /Users/y/Research_MEM/30_reproduction
+python3 -m pytest tests/                                  # 39 passed, 4 skipped
+bash scripts/aggregate_results.sh                          # 端到端：sanity + tables + figures
+python3 -m reproduction.orchestrator --stage main --dry-run | tail -3
+# → 99 tasks listed correctly
+```
 
 ---
 
