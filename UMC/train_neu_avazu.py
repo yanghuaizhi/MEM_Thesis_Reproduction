@@ -294,13 +294,15 @@ def trial(config_update):
     )
 
     # --- Precompute backbone outputs (frozen model, deterministic) ---
-    print("precompute_valid_start")
+    # H2: precompute 用 eval_batch_size（默认 batch_size_calib × 4），仅前向无数值影响
+    eval_bs = int(getattr(config, "eval_batch_size", None) or config.batch_size_calib * 4)
+    print(f"precompute_valid_start  eval_batch_size={eval_bs}")
     valid_logit, valid_u, valid_sigma2 = precompute_backbone_outputs(
-        model, valid_tensor_data, device, config.batch_size_calib
+        model, valid_tensor_data, device, eval_bs
     )
     print("precompute_test_start")
     test_logit, test_u, test_sigma2_cached = precompute_backbone_outputs(
-        model, test_tensor_data, device, config.batch_size_calib
+        model, test_tensor_data, device, eval_bs
     )
 
     # --- u_mode: replace u signal for ablation experiment ---
@@ -346,13 +348,13 @@ def trial(config_update):
     test_loader = DataLoader(
         dataset=test_tensor_data,
         shuffle=False,
-        batch_size=config.batch_size_calib,
+        batch_size=eval_bs,                                # H2: eval batch (默认 calib × 4)
         num_workers=int(config.num_workers),
         pin_memory=bool(config.pin_memory),
         persistent_workers=bool(config.persistent_workers and int(config.num_workers) > 0),
     )
     print(
-        f"cached_dataloaders valid_batches={len(valid_loader)} test_batches={len(test_loader)}"
+        f"cached_dataloaders valid_batches={len(valid_loader)} test_batches={len(test_loader)} eval_batch={eval_bs}"
     )
 
     u_stats = None

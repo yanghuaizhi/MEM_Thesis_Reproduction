@@ -14,11 +14,11 @@ seeds: [1024, 2024, 3024]
 datasets: [aliccp, avazu, criteo]
 methods: [uamcm]                # 仅 UAMCM 做 u_mode 消融
 
-# 关键变量：u_mode
+# R1: 删除 pe 重复（pe 已在 main_99 跑过，独立性不增加；从 main_99 取 pe 数据）
+# F4=B 决策: shuffled 用设计 B（train+test 都打乱，真 u 信号 ablation）
 u_modes:
-  - pe                          # 默认（PackedEnsemble σ² 派生）
-  - shuffled                    # 关键消融：u 与样本顺序解耦
-  - logit                       # 替代源：用 logit 残差代替 u
+  - shuffled                    # 设计 B: train + test 都打乱 u（真 ablation）
+  - logit                       # 替代源：用 logit 残差代替 sigma²
 
 # shuffled 模式审计要求（plan §A.5.2 第 2 条审计项 + §B 隐含）
 shuffled_audit:
@@ -29,8 +29,8 @@ shuffled_audit:
 
 # 总任务量
 totals:
-  runs: 27                      # 3 u_modes × 3 datasets × 3 seeds
-  estimated_gpu_hours: 4
+  runs: 18                      # 2 u_modes × 3 datasets × 3 seeds (pe 从 main_99 取)
+  estimated_gpu_hours: 3
 
 # 后续分析
 analysis:

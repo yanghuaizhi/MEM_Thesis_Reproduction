@@ -266,27 +266,41 @@ def _build_calib_config_update(
 
 
 def _build_v9_plan(configs: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """v9 sample-level inference（占位：后续 task 完善实现）。"""
+    """v9 sample-level inference: 复用 train_neu 流程 + 注入 sample_level_save_path。
+
+    FIX-9: 跑 3 seed × 3 dataset × 2 method (umc + uamcm) = 18 任务
+    设计原理: run_v9 不需新写 inference 逻辑——直接调 train_neu trial，UMC 内部
+    L860-864/L943-948 会自动调 utils.save_samples.save_sample_level() 保存 NPZ。
+    """
     v9 = configs["experiments"]["v9_error_analysis"]
+    hw = configs["hardware"]["rtx5090"]
+    main = configs["experiments"]["main_99"]
     runs: List[Dict[str, Any]] = []
+    samples_dir = v9["output"]["samples_dir"]      # 相对 CKPT_ROOT
+    exp_root = _experiments_root()
+
     for dataset in v9["datasets"]:
-        for seed in v9["seeds"]:
-            runs.append(
-                {
-                    "stage": "v9",
-                    "entry": "v9_inference",       # TODO: _runner 待实现
-                    "dataset": dataset,
-                    "method": v9["inference"]["method"],
-                    "seed": seed,
-                    "config_update": {
-                        "_stage": "v9",
-                        "data_name": dataset,
-                        "method": v9["inference"]["method"],
-                        "use_calibrated_output": v9["inference"]["use_calibrated_output"],
-                        "samples_dir": v9["output"]["samples_dir"],
-                    },
-                }
-            )
+        ds = configs["datasets"][dataset]
+        for method in v9["inference"]["methods"]:    # B4: umc + uamcm 双方法
+            mcfg = configs["methods"][method]
+            for seed in v9["seeds"]:                # FIX-9: 3 seeds
+                cu = _build_calib_config_update(
+                    dataset=dataset, method=method, seed=seed,
+                    ds=ds, mcfg=mcfg, main=main, hw=hw,
+                )
+                # B5: 注入 sample_level_save_path 让 NPZ 保存
+                npz_path = exp_root / samples_dir / dataset / f"{method}_seed_{seed}_samples.npz"
+                cu["sample_level_save_path"] = str(npz_path)
+                runs.append(
+                    {
+                        "stage": "v9",
+                        "entry": mcfg["entry"],         # train_neu
+                        "dataset": dataset,
+                        "method": method,
+                        "seed": seed,
+                        "config_update": cu,
+                    }
+                )
     return runs
 
 

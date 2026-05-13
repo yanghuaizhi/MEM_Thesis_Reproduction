@@ -1,7 +1,10 @@
 # reproduction/configs/methods/neucalib.yaml — NeuralCalib
 # 类型: 神经基线（不依赖 u）
+# 注: yaml 文件名保留 "neucalib"（plan §C.3 列表名），但 method 字段必须是 "neu"
+# 与 UMC train_neu_ali.py L429 的 dispatch `if config.method == "neu"` 对齐。
 
-name: neucalib
+name: neu                    # UMC 内部 method 字符串（不是 "neucalib"）
+display_name: neucalib       # 表格/报告用的显示名
 type: neural_baseline
 uses_u: false
 entry: train_neu

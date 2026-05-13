@@ -66,13 +66,14 @@ def test_main_plan_filter_by_method_type(configs):
     assert methods == {"platt", "ir", "hb"}
 
 
-def test_v10_plan_has_27_runs(configs):
+def test_v10_plan_has_18_runs(configs):
+    """R1: v10 删 pe 重复后只跑 shuffled+logit (2 × 3 × 3 = 18)。"""
     from reproduction.orchestrator import _build_v10_plan
 
     runs = _build_v10_plan(configs)
-    assert len(runs) == 27                   # 3 u_modes × 3 datasets × 3 seeds
+    assert len(runs) == 18                   # 2 u_modes × 3 datasets × 3 seeds
     u_modes_in_method = {r["method"].split("_umode_")[1] for r in runs}
-    assert u_modes_in_method == {"pe", "shuffled", "logit"}
+    assert u_modes_in_method == {"shuffled", "logit"}
 
 
 def test_config_update_critical_fields(configs):

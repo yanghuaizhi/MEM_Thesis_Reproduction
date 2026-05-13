@@ -174,18 +174,33 @@ def load_v10_metrics() -> List[Dict[str, Any]]:
     return out
 
 
-def load_v9_samples(dataset: str) -> Optional[Dict[str, Any]]:
-    """读某数据集的 v9 sample-level NPZ。"""
+def load_v9_samples(dataset: str, method: str = "uamcm", seed: int = 1024) -> Optional[Dict[str, Any]]:
+    """读某 (dataset, method, seed) 的 v9 sample-level NPZ。
+
+    B3: UMC `save_samples.save_sample_level` 实际保存 4 字段:
+        y_true, y_pred_uncalib, y_pred_calib, sigma2
+    `u` 字段不存在，需现场从 sigma2 派生: u = log(sigma2 + 1e-8)
+    （与 UMC/train_neu_ali.py L142 一致）
+
+    路径模板（与 orchestrator._build_v9_plan 一致）:
+        <CKPT_ROOT>/v9_samples/<dataset>/<method>_seed_<seed>_samples.npz
+    """
     import numpy as np
 
     v9_dir = _experiments_root() / "v9_samples" / dataset
-    if not v9_dir.exists():
-        return None
-    npz_files = list(v9_dir.glob("*.npz"))
-    if not npz_files:
-        return None
-    arr = np.load(npz_files[0])
-    return {k: arr[k] for k in arr.files}
+    target = v9_dir / f"{method}_seed_{seed}_samples.npz"
+    if not target.exists():
+        # fallback: 任意 NPZ
+        npz_files = list(v9_dir.glob("*.npz"))
+        if not npz_files:
+            return None
+        target = npz_files[0]
+    arr = np.load(target)
+    data = {k: arr[k] for k in arr.files}
+    # B3: 派生 u = log(sigma2 + 1e-8)
+    if "sigma2" in data and "u" not in data:
+        data["u"] = np.log(data["sigma2"].astype(np.float64) + 1e-8)
+    return data
 
 
 def _read_final_metric(jsonl_path: Path) -> Optional[Dict[str, Any]]:
@@ -249,6 +264,167 @@ def compute_pcoc(y_pred: Any, y_true: Any) -> float:
     if yt.mean() == 0:
         return float("nan")
     return float(yp.mean() / yt.mean())
+
+
+# ============================================================================
+# F1: 从复现 v9 数据派生诊断预判（替代 hardcode 引用 PAPER_REFERENCE）
+# ============================================================================
+
+def compute_diagnosis_prediction(samples: Dict[str, Any], n_bins: int = 20) -> Dict[str, Any]:
+    """从 v9 sample-level NPZ 派生 u 信号有效性预判。
+
+    输入:
+        samples: load_v9_samples() 返回（含 y_pred_uncalib, y_true, u）
+
+    Returns dict:
+        pcoc: 全局 PCOC
+        over_predict_bins: per-u-bin 中 PCOC>1.0 的桶数 (/20)
+        monotonic: "decreasing" | "increasing" | "neither"
+        cv_pct: per-u-bin PCOC 变异系数
+        pattern: "A" | "B" | "C"      # 派生模式
+        u_signal_prediction: 自然语言描述
+    """
+    import numpy as np
+
+    yp = np.asarray(samples["y_pred_uncalib"], dtype=float)
+    yt = np.asarray(samples["y_true"], dtype=float)
+    u = np.asarray(samples["u"], dtype=float)
+
+    pcoc = compute_pcoc(yp, yt)
+    per_bin = compute_per_u_bin_pcoc(yp, yt, u, n_bins=n_bins)
+    valid = [p for p in per_bin["pcoc_per_bin"] if not math.isnan(p)]
+
+    # 派生模式（按 plan §A.4.1 阈值）
+    if pcoc > 1.2 and per_bin["over_predict_bins"] >= 18 and per_bin["monotonic_decreasing"]:
+        pattern = "A"   # 强过预测
+        prediction = "u 信号全域有效（shuffled 应显著恶化）"
+    elif pcoc < 1.0 and per_bin["over_predict_bins"] <= 2 and per_bin["monotonic_decreasing"]:
+        pattern = "B"   # 弱欠预测
+        prediction = "u 信号局部显著（shuffled 应显著恶化）"
+    elif 0.95 <= pcoc <= 1.15 and per_bin["non_monotonic"]:
+        pattern = "C"   # 非单调混合
+        prediction = "u 信号方向混乱（shuffled 应不显著恶化）"
+    else:
+        pattern = "unclassified"
+        prediction = "诊断模式不属于 A/B/C 三类，u 信号预判待定"
+
+    return {
+        "pcoc": pcoc,
+        "over_predict_bins": per_bin["over_predict_bins"],
+        "monotonic": (
+            "decreasing" if per_bin["monotonic_decreasing"]
+            else "increasing" if per_bin["monotonic_increasing"]
+            else "non_monotonic"
+        ),
+        "cv_pct": per_bin["cv_pct"],
+        "pattern": pattern,
+        "u_signal_prediction": prediction,
+    }
+
+
+# ============================================================================
+# Bootstrap + paired significance (FIX-10)
+# ============================================================================
+
+def bootstrap_ece_ci(
+    y_true: Any,
+    y_pred: Any,
+    n_bins: int = 100,
+    n_bootstrap: int = 1000,
+    confidence: float = 0.95,
+    seed: int = 1024,
+) -> Dict[str, float]:
+    """对单个 (y_true, y_pred) 做 bootstrap on test set 计算 ECE 置信区间。
+
+    无 GPU 成本，仅 numpy。每个 bootstrap 重采样 N 个 index with replacement，重算 ECE。
+    Returns: {mean, std, lo, hi}（置信区间端点）
+    """
+    import numpy as np
+
+    yt = np.asarray(y_true, dtype=float).reshape(-1)
+    yp = np.asarray(y_pred, dtype=float).reshape(-1)
+    n = len(yt)
+    rng = np.random.RandomState(seed)
+
+    eces: List[float] = []
+    for _ in range(n_bootstrap):
+        idx = rng.randint(0, n, size=n)
+        eces.append(_ece_fast(yt[idx], yp[idx], n_bins))
+    eces_arr = np.array(eces)
+    alpha = (1 - confidence) / 2
+    return {
+        "mean": float(eces_arr.mean()),
+        "std": float(eces_arr.std(ddof=1)),
+        "lo": float(np.quantile(eces_arr, alpha)),
+        "hi": float(np.quantile(eces_arr, 1 - alpha)),
+    }
+
+
+def paired_ece_test(
+    y_true: Any,
+    y_pred_a: Any,
+    y_pred_b: Any,
+    n_bins: int = 100,
+    n_bootstrap: int = 1000,
+    seed: int = 1024,
+) -> Dict[str, Any]:
+    """Paired bootstrap test: 两个模型的 ECE 差异是否显著。
+
+    每个 bootstrap 用同一组 sample indices 重算两个模型的 ECE，得到差异分布。
+    Returns: {ece_a_mean, ece_b_mean, diff_mean, diff_lo, diff_hi, p_value (one-sided), significant}
+    """
+    import numpy as np
+
+    yt = np.asarray(y_true, dtype=float).reshape(-1)
+    ya = np.asarray(y_pred_a, dtype=float).reshape(-1)
+    yb = np.asarray(y_pred_b, dtype=float).reshape(-1)
+    n = len(yt)
+    rng = np.random.RandomState(seed)
+
+    diffs: List[float] = []
+    ecesa: List[float] = []
+    ecesb: List[float] = []
+    for _ in range(n_bootstrap):
+        idx = rng.randint(0, n, size=n)
+        e_a = _ece_fast(yt[idx], ya[idx], n_bins)
+        e_b = _ece_fast(yt[idx], yb[idx], n_bins)
+        ecesa.append(e_a)
+        ecesb.append(e_b)
+        diffs.append(e_a - e_b)
+    diff_arr = np.array(diffs)
+    # one-sided p-value: P(diff ≤ 0)（"b 比 a 好"的零假设反对率）
+    p_value = float((diff_arr <= 0).mean())
+    return {
+        "ece_a_mean": float(np.mean(ecesa)),
+        "ece_b_mean": float(np.mean(ecesb)),
+        "diff_mean": float(diff_arr.mean()),
+        "diff_lo": float(np.quantile(diff_arr, 0.025)),
+        "diff_hi": float(np.quantile(diff_arr, 0.975)),
+        "p_value": p_value,
+        "significant": p_value < 0.05,
+    }
+
+
+def _ece_fast(y_true: Any, y_pred: Any, n_bins: int = 100) -> float:
+    """快速 ECE 计算（与 UMC/utils/metric.py get_ece 数学一致，但纯 numpy）。"""
+    import numpy as np
+
+    yt = np.asarray(y_true).reshape(-1)
+    yp = np.asarray(y_pred).reshape(-1)
+    if len(yt) == 0:
+        return 0.0
+    edges = np.linspace(0, 1, n_bins + 1)
+    bin_ids = np.clip(np.digitize(yp, edges[1:-1]), 0, n_bins - 1)
+    ece = 0.0
+    for b in range(n_bins):
+        mask = bin_ids == b
+        if not mask.any():
+            continue
+        acc = yt[mask].mean()
+        conf = yp[mask].mean()
+        ece += (mask.sum() / len(yt)) * abs(acc - conf)
+    return float(ece)
+
 
 
 def compute_per_u_bin_pcoc(
@@ -453,8 +629,88 @@ def check_p2_p3_p4(main_records: List[Dict[str, Any]]) -> Dict[str, Verdict]:
 # L3: 机制层（P5 shuffled-u）
 # ============================================================================
 
+def check_p5_diagnosis_vs_validation() -> Dict[str, Verdict]:
+    """F1 派生预判 vs v10 实验验证 一致性（P5 论证支点）。
+
+    流程:
+        1. 对每个 dataset，从 v9 NPZ 计算诊断预判（pattern + u 有效性）
+        2. 对每个 dataset，从 v10 实验结果判定 shuffled 是否恶化
+        3. 一致性: 派生预判方向 == v10 验证方向？
+
+    **独立性标注**: v9 派生 + v10 验证基于同一 model（UAMCM × seed=1024），
+    非完全独立。该函数仅验证"复现内部 v9/v10 一致性"，不能替代用不同 model 做的
+    真独立验证。
+    """
+    v10_records = load_v10_metrics()
+    by_key = aggregate_mean_std(
+        [{**r, "method": r["u_mode"]} for r in v10_records],
+        "ece", ddof=1,
+    )
+
+    results: Dict[str, Verdict] = {}
+    for dataset in ("aliccp", "avazu", "criteo"):
+        # 1. v9 派生预判
+        samples = load_v9_samples(dataset, method="uamcm", seed=1024)
+        if samples is None or "u" not in samples:
+            results[f"P5_diagnosis_{dataset}"] = Verdict(
+                name=f"P5 派生预判 vs 实验 [{dataset}]",
+                state="no_data",
+                detail="v9 samples NPZ 缺失或 u 字段未派生",
+            )
+            continue
+        derived = compute_diagnosis_prediction(samples)
+        predicted_shuffled_worsens = derived["pattern"] in ("A", "B")  # A/B 预判恶化，C 预判不恶化
+
+        # 2. v10 实验
+        pe = by_key.get((dataset, "pe"))
+        shuf = by_key.get((dataset, "shuffled"))
+        if not pe or not shuf:
+            results[f"P5_diagnosis_{dataset}"] = Verdict(
+                name=f"P5 派生预判 vs 实验 [{dataset}]",
+                state="no_data",
+                detail=f"v10 数据缺失（pe={bool(pe)}, shuf={bool(shuf)})",
+                reproduction_value={"derived": derived},
+            )
+            continue
+        worsening_pct = 100 * (shuf["mean"] - pe["mean"]) / pe["mean"] if pe["mean"] else 0
+        if dataset == "avazu":
+            sigma_pct = 100 * shuf["std"] / pe["mean"] if pe["mean"] else 0
+            actual_shuffled_worsens = abs(worsening_pct) > sigma_pct
+        else:
+            actual_shuffled_worsens = worsening_pct >= 30
+
+        # 3. 一致性
+        if predicted_shuffled_worsens == actual_shuffled_worsens:
+            state = "supports"
+            detail = (
+                f"派生预判 (pattern={derived['pattern']}: {derived['u_signal_prediction']}) "
+                f"与 v10 实验方向一致 (shuffled 恶化 {worsening_pct:+.1f}%)"
+            )
+        else:
+            state = "opposes"
+            detail = (
+                f"派生预判 (pattern={derived['pattern']}: {derived['u_signal_prediction']}) "
+                f"与 v10 实验方向**矛盾** (shuffled 恶化 {worsening_pct:+.1f}%)"
+            )
+        results[f"P5_diagnosis_{dataset}"] = Verdict(
+            name=f"P5 派生预判 vs 实验 [{dataset}]",
+            state=state,
+            detail=detail,
+            reproduction_value={
+                "derived_pattern": derived["pattern"],
+                "derived_pcoc": derived["pcoc"],
+                "shuffled_worsening_pct": worsening_pct,
+            },
+        )
+    return results
+
+
 def check_p5_shuffled(v10_records: List[Dict[str, Any]]) -> Dict[str, Verdict]:
-    """P5: 三数据集 shuffled-u 结果与诊断预判一致性。"""
+    """P5: 三数据集 shuffled-u 结果与诊断预判一致性 + logit 对照 (FIX-11)。
+
+    NOTE: v9 派生预判 + v10 验证基于同一 model（UAMCM × PackedDeepFM × seed=1024），
+    **非完全独立验证**——这是设计层局限，在 P5 报告中需明示。
+    """
     by_key = aggregate_mean_std(
         [{**r, "method": r["u_mode"]} for r in v10_records],
         "ece", ddof=1,
@@ -462,8 +718,12 @@ def check_p5_shuffled(v10_records: List[Dict[str, Any]]) -> Dict[str, Verdict]:
     results: Dict[str, Verdict] = {}
 
     for dataset in ("aliccp", "criteo", "avazu"):
+        # R1: pe 从 main_99 取（v10 不再跑 pe）— 但 diff_with_paper 输入是 v10，
+        # 这里如果 pe 数据缺，需 fallback 从 main_99 拉。最简实现：让 v10_records
+        # 在上游已合并 main pe → 这里直接读 pe key
         pe = by_key.get((dataset, "pe"))
         shuf = by_key.get((dataset, "shuffled"))
+        logit = by_key.get((dataset, "logit"))    # FIX-11: logit 对照
         if not pe or not shuf:
             results[f"P5_{dataset}"] = Verdict(
                 name=f"P5 [{dataset}] shuffled-u",
@@ -474,6 +734,18 @@ def check_p5_shuffled(v10_records: List[Dict[str, Any]]) -> Dict[str, Verdict]:
         worsening_pct = 100 * (shuf["mean"] - pe["mean"]) / pe["mean"] if pe["mean"] else 0
         sigma = shuf["std"]
         sigma_pct = 100 * sigma / pe["mean"] if pe["mean"] else 0
+
+        # FIX-11: logit 对照——u 信号源敏感性测试
+        logit_detail = ""
+        if logit:
+            logit_change_pct = 100 * (logit["mean"] - pe["mean"]) / pe["mean"] if pe["mean"] else 0
+            if abs(logit_change_pct) < 10:
+                logit_verdict = "u 信号源不敏感（sigma² 可被 logit 替代）"
+            else:
+                logit_verdict = "sigma² 是关键信号（logit 替代后显著变化）"
+            logit_detail = (
+                f"; logit-pe 变化 {logit_change_pct:+.1f}% → {logit_verdict}"
+            )
 
         if dataset == "avazu":
             # P4 关键：变化在 ±σ 内 = 支持论断
@@ -487,9 +759,10 @@ def check_p5_shuffled(v10_records: List[Dict[str, Any]]) -> Dict[str, Verdict]:
             detail = (
                 f"shuffled-u change {worsening_pct:+.1f}% "
                 f"(σ={sigma_pct:.1f}%; in_sigma={in_sigma})"
+                f"{logit_detail}"
             )
         else:
-            # P2/P3 关键：shuffled-u 恶化 ≥ 30% = 支持
+            # P2/P3 关键：shuffled-u 恶化 ≥ 30%
             if worsening_pct >= 30:
                 state = "supports"
             elif worsening_pct >= 15:
@@ -499,14 +772,18 @@ def check_p5_shuffled(v10_records: List[Dict[str, Any]]) -> Dict[str, Verdict]:
             detail = (
                 f"shuffled-u worsening {worsening_pct:+.1f}% "
                 f"(PE ECE {pe['mean']*100:.2f}, shuffled {shuf['mean']*100:.2f}); "
-                f"threshold ≥30%"
+                f"threshold ≥30%{logit_detail}"
             )
         results[f"P5_{dataset}"] = Verdict(
             name=f"P5 [{dataset}] shuffled-u",
             state=state,
             detail=detail,
             paper_reference={"shuffled_u_worsening_pct": PAPER_REFERENCE[dataset]["shuffled_u_worsening_pct"]},
-            reproduction_value={"worsening_pct": worsening_pct},
+            reproduction_value={
+                "worsening_pct": worsening_pct,
+                "logit_change_pct": (100 * (logit["mean"] - pe["mean"]) / pe["mean"]
+                                     if logit and pe["mean"] else None),
+            },
         )
     return results
 
@@ -685,8 +962,17 @@ def main() -> int:
         print(f"L2 written: {out_dir / 'L2_method_verification.md'}")
     if args.all or args.layer == "mechanism":
         v = check_p5_shuffled(v10_recs)
+        # FIX-12: F1 派生预判 vs 实验验证 一致性（合并到 L3 mechanism）
+        v.update(check_p5_diagnosis_vs_validation())
         all_v["L3_mechanism"] = v
-        (out_dir / "L3_mechanism_verification.md").write_text(render_layer("L3 (P5)", v))
+        l3_text = render_layer("L3 (P5 + 派生预判)", v)
+        l3_text += (
+            "\n---\n\n## 独立性标注（plan §A.4 复现哲学）\n\n"
+            "v9 派生预判 + v10 实验验证均基于**同一 model**（UAMCM × PackedDeepFM × seed=1024），"
+            "因此本节命中率验证的是\"复现内部 v9/v10 一致性\"，**不是用不同 model 的真独立验证**。"
+            "如需真独立，应用 model A 派生预判 + model B 验证（超出当前 reproduction 范围）。\n"
+        )
+        (out_dir / "L3_mechanism_verification.md").write_text(l3_text)
         print(f"L3 written: {out_dir / 'L3_mechanism_verification.md'}")
     if args.all or args.layer == "decision":
         v = check_decision_framework(main_recs, v10_recs)
@@ -696,10 +982,11 @@ def main() -> int:
     if args.all or args.layer == "summary":
         # summary 需要全部 4 层产物
         if len(all_v) < 4:
-            # 重新加载（如果用户只跑 summary）
             all_v.setdefault("L1_diagnosis", check_p1_diagnosis())
             all_v.setdefault("L2_method", check_p2_p3_p4(main_recs))
-            all_v.setdefault("L3_mechanism", check_p5_shuffled(v10_recs))
+            l3 = check_p5_shuffled(v10_recs)
+            l3.update(check_p5_diagnosis_vs_validation())
+            all_v.setdefault("L3_mechanism", l3)
             all_v.setdefault("L4_decision", check_decision_framework(main_recs, v10_recs))
         (out_dir / "diff_with_v1_13.md").write_text(render_summary(all_v))
         print(f"Summary written: {out_dir / 'diff_with_v1_13.md'}")

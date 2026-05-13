@@ -11,7 +11,7 @@ python3 -m reproduction.analysis.sanity_check \
     --json-out results/diff_audit/sanity_check.json
 
 echo "=== [aggregate] step 2/3: generate tables ==="
-for t in table_4_1 table_4_2 table_4_3 table_4_4 tables_5_3_5_6; do
+for t in table_4_1 table_4_2 table_4_3 table_4_4 tables_5_3_5_6 table_5_4_threshold; do
     python3 -m reproduction.analysis.tables.$t
 done
 

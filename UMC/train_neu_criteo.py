@@ -89,6 +89,8 @@ class Config(object):
         self.distill_lambda = 0.0
         self.distill_t = 1.0
         self.u_mode = "pe"  # "pe" | "shuffled" | "logit"
+        # H2: evaluation/inference batch_size — 5090 显存大可独立配置（默认 calib batch × 4）
+        self.eval_batch_size = None  # None → 用 batch_size_calib（向后兼容）
 
 
 def compute_u_stats(data_loader, model, device, config):
@@ -297,13 +299,15 @@ def trial(config_update):
             torch.from_numpy(np.concatenate(test_x, axis=-1)), torch.from_numpy(test_y)
         )
 
-        print("precompute_valid_start")
+        # H2: precompute 用 eval_batch_size（默认 batch_size_calib × 4），仅前向无数值影响
+        _eval_bs_precompute = int(getattr(config, "eval_batch_size", None) or config.batch_size_calib * 4)
+        print(f"precompute_valid_start  eval_batch_size={_eval_bs_precompute}")
         valid_logit, valid_u, valid_sigma2 = precompute_backbone_outputs(
-            model, valid_tensor_data, device, config.batch_size_calib
+            model, valid_tensor_data, device, _eval_bs_precompute
         )
         print("precompute_test_start")
         test_logit, test_u, test_sigma2_cached = precompute_backbone_outputs(
-            model, test_tensor_data, device, config.batch_size_calib
+            model, test_tensor_data, device, _eval_bs_precompute
         )
 
         valid_x_tensor = valid_tensor_data.tensors[0]
@@ -331,12 +335,22 @@ def trial(config_update):
         print(f"cache_populated seconds={_time()-_t0:.2f}")
 
     # --- u_mode: replace u signal for ablation experiment ---
+    # 注: valid_u 用于 calib 训练循环；test_u 用于评估。shuffled 同时打乱 = 设计 B 真 ablation。
     u_mode = getattr(config, "u_mode", "pe")
     if u_mode == "shuffled":
         g = torch.Generator().manual_seed(calib_seed)
+        orig_valid_u = valid_u.clone()
         valid_u = valid_u[torch.randperm(len(valid_u), generator=g)]
         test_u = test_u[torch.randperm(len(test_u), generator=g)]
-        print(f"u_mode=shuffled: permuted u with seed={calib_seed}")
+        try:
+            _corr = float(np.corrcoef(
+                orig_valid_u.cpu().numpy().reshape(-1),
+                valid_u.cpu().numpy().reshape(-1),
+            )[0, 1])
+        except Exception:
+            _corr = float("nan")
+        print(f"u_mode=shuffled: permuted u with seed={calib_seed}, "
+              f"shuffled_u_pearson_corr={_corr:.6f}")
     elif u_mode == "logit":
         u_mean, u_std = valid_u.mean(), valid_u.std()
         logit_mean, logit_std = valid_logit.mean(), valid_logit.std()
@@ -368,7 +382,7 @@ def trial(config_update):
     test_loader = DataLoader(
         dataset=test_tensor_data,
         shuffle=False,
-        batch_size=config.batch_size_calib,
+        batch_size=int(getattr(config, "eval_batch_size", None) or config.batch_size_calib * 4),  # H2
         num_workers=int(config.num_workers),
         pin_memory=bool(config.pin_memory),
         persistent_workers=bool(config.persistent_workers and int(config.num_workers) > 0),

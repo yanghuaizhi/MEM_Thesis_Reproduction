@@ -33,7 +33,7 @@ methods:
   - ir
   - hb
   - umnn
-  - neucalib
+  - neu                       # UMC 内部 method 名（yaml 文件名 neucalib.yaml）
   - desc
   - sbcr
   - umc

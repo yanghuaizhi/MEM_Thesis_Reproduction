@@ -4,19 +4,19 @@
 name: v9_error_analysis
 description: |
   生成 sample-level NPZ，用于 Ch3 PCOC-u 分桶诊断（图 3-1 ~ 3-4 + 热力图）。
-  对每个 (dataset, seed=1024) 用最佳 UAMCM 模型做 inference，保存:
-    y_pred_uncalib, y_pred_calib, y_true, u (=log σ²), sigma_sq
+  对每个 (dataset, method, seed) 用对应 calibrator 做 inference，保存:
+    y_true, y_pred_uncalib, y_pred_calib, sigma2
 
-# 依赖：main_99 阶段 4 完成（UAMCM 模型已训练）
+# 依赖：main_99 阶段 4 完成（UMC + UAMCM 模型已训练）
 depends_on: main_99
 
-# 仅在 pretrain seed=1024 上做（论文 Ch3 用单 seed）
-seeds: [1024]
+# FIX-9: 跑 3 seed 提升 P1 统计稳健性（plan §A.5.1 单 seed=1024 风险）
+seeds: [1024, 2024, 3024]
 datasets: [aliccp, avazu, criteo]
 
-# 用最佳 UAMCM 模型做 inference
+# B4: 跑 umc + uamcm 双方法（论文 Ch3 图 3-1~3-4 同时展示两者对比）
 inference:
-  method: uamcm
+  methods: [umc, uamcm]
   use_calibrated_output: false  # CRITICAL: Ch3 诊断必须用未校准 backbone 输出
                                 #          （plan §A.5.2 第 1 条审计项）
   save_calibrated_too: true     # 同时保存校准后输出供对比
@@ -24,12 +24,11 @@ inference:
 # 输出
 output:
   samples_dir: v9_samples       # 相对 CKPT_ROOT
-  npz_fields:
+  npz_fields:                   # save_samples.py 实际保存字段
+    - y_true
     - y_pred_uncalib            # 未校准 backbone 预测
     - y_pred_calib              # 校准后预测
-    - y_true                    # 真实 label
-    - u                         # log(σ²)（不确定度信号）
-    - sigma_sq                  # 原始 σ² 值
+    - sigma2                    # PE σ² 方差（u = log(sigma2+1e-8) 派生）
 
 # 后续分析（reproduction/analysis/figures/fig_3_*.py 读取此 NPZ）
 analysis:
@@ -37,4 +36,7 @@ analysis:
   heatmap_p_bins: 10            # 图 3-2 热力图 p 轴
   heatmap_u_bins: 5             # 图 3-2 热力图 u 轴
 
-estimated_gpu_hours: 2          # 全数据集 inference + 保存
+# 总任务量审计
+totals:
+  runs: 18                      # 2 methods × 3 datasets × 3 seeds
+  estimated_gpu_hours: 6        # 每 run ~20min（含 train + eval + NPZ 保存）
