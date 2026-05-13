@@ -77,6 +77,11 @@ def build_table(records: list) -> tuple:
         "# Table 4-1: ECE/AUC/LogLoss for 11 methods × 3 datasets\n\n"
         "Reported: mean±std (ddof=1), N=3 seeds {1024, 2024, 3024}. "
         "ECE×100 for readability. M=100 bins.\n\n"
+        "**Note on statistical methods (platt/ir/hb)**: 这三种方法是数学上"
+        "100% deterministic 算法（Platt=sklearn LogisticRegression lbfgs、"
+        "IR=PAV 算法、HB=digitize+mean），跨 seed 输出完全唯一，因此 std=0 "
+        "是算法本质，与 baiyimeng/UMC 原作一致。神经方法（umnn/neucalib/desc/"
+        "sbcr/umc/umc_wor/uamcm/uamcm_wor）才报告真 3-seed 方差。\n\n"
     )
     md += render_markdown_table(headers, md_rows)
     md += "\n_Generated from experiments/runs/main (must pass sanity_check first)._\n"

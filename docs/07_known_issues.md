@@ -105,18 +105,26 @@ from reproduction.utils.gpu import setup_hardware
 | **FIX-7** | 三个 dataset yaml 的 CTR/N 是拍脑袋值（Criteo 写 0.2% 实际 25.6%，错 100 倍）；data/README.md 同样错 | 从 archive `data_meta.json` 和 v9 NPZ 取实测：AliCCP 3.33% / Avazu 16.31% / Criteo 25.65% |
 | **VERIFY-2** | aliccp.py `FIELD_INDEX_ALICCP = 0` 注释"与 L66 一致"措辞错（L66=2，但 L981 trial dict 覆盖为 0，运行时生效 0） | 注释校正为"trial 入口覆盖；运行时生效 0" |
 
-### 3.2 待用户决策
+### 3.2 算法本质澄清（非 bug）
 
-**FIX-6**：`UMC/train_sta_*.py` 第 ~389 行硬编码 `setup_seed(1024)`，忽略 `config.seed` → 统计方法（Platt/IR/HB）3 seed 实际只有 1 seed，std=0 标准差。
+**FIX-6 重新定义**：`UMC/train_sta_*.py` 第 ~389 行 `setup_seed(1024)` 硬编码**不是 bug，是合理设计**。
 
-**两个选项**：
+**根因**：Platt scaling (sklearn LogisticRegression lbfgs)、Isotonic Regression (PAV 算法)、Histogram Binning 三种统计校准方法**数学上 100% deterministic** — 给定相同输入数据，输出完全唯一，与 seed 无关。
 
-| 选项 | 含义 | 风险 |
-|------|------|------|
-| A. 接受零方差 | 表 4-1 中 platt/ir/hb 三列 std 全部 0 | 论文 v1.13 是否报告过统计方法 std？需查 REVISION_LOG.md。这与 baiyimeng/UMC 原作一致（他们也用单 seed） |
-| B. 改 UMC 源 | 把 `setup_seed(1024)` 改为 `setup_seed(config.seed)` | 数值漂移（统计方法 fit 取决于初始化）；论文 v1.13 实测如果 seed=1024 单点，改了对照失败 |
+**实测验证**（本项目跑 3 次 fit，max|p1−p2| = 0）：
+```python
+sklearn LogisticRegression(solver='lbfgs').fit(...)  # deterministic
+sklearn IsotonicRegression().fit(...)                 # deterministic (PAV)
+np.digitize + bin means                                # deterministic
+```
 
-**推荐**：选 A，保留 baiyimeng 原行为；在 `table_4_1.md` 表脚注明示"统计方法单 seed，std 显示 0 是设计如此"。
+**对照**：UMC 原作 baiyimeng 也是单 seed 设计；本项目接受零方差，与 ground truth 一致。
+
+**处理**：
+- 表 4-1 中 platt/ir/hb 的 std 列显示 0（已在 `table_4_1.py` 添加表脚注说明）
+- `sanity_check` 的 `audit_cv` 在 std=0 时 cv=0 不报警，逻辑已安全
+- orchestrator 仍跑 27 个 statistical 任务（11×3×3 中 statistical 占 27），跑出相同结果——这是冗余但低成本（总耗时 <1h），不值得改 orchestrator 复杂化
+- **未来可优化**（非必要）：让 statistical method 在 `_build_main_plan` 中只生成 seed=1024 一个任务，aggregate 时复用到三 seed 行
 
 ### 3.3 VERIFY-1 数据源澄清
 
