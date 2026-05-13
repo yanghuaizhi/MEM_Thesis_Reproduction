@@ -1,0 +1,46 @@
+# reproduction/configs/hardware/rtx5090.yaml — RTX 5090 单卡硬件优化
+# 来源: plan §D.1-D.2 + reproduction/utils/gpu.py 接受的 cfg schema
+
+name: rtx5090
+description: |
+  RTX 5090 单卡 32GB / 14vCPU / 120GB RAM (山东二区 2.98 元/h)。
+  分 3 层优化：Tier 1 必做，Tier 2 smoke test 验证后启用，Tier 3 红线禁止动。
+
+target_gpu:
+  name: "RTX 5090"
+  memory_gb: 32
+  vcpu: 14
+  ram_gb: 120
+
+# Tier 1（完全安全，必做）
+dataloader:
+  num_workers: 12               # 14 vCPU 留 2 给主进程 + system
+  pin_memory: true
+  persistent_workers: true      # 减少 worker 重建开销
+  prefetch_factor: 4            # 预取 batch 数
+
+eval:
+  batch_size_multiplier: 4      # 推理 batch = batch_size_calib * 4（不影响数值）
+
+# Tier 2（近无关，需 smoke test 验证 |ΔECE| < 1e-5 后启用）
+precision:
+  allow_tf32_matmul: true       # cuda.matmul.allow_tf32
+  allow_tf32_cudnn: true        # cudnn.allow_tf32
+  matmul_precision: high        # torch.set_float32_matmul_precision
+
+compile:
+  enabled: false                # 默认关，smoke test 验证后开（Blackwell 兼容性待 verify）
+
+# Tier 3 红线（gpu.py setup_hardware 强制 enforce，不让 cfg 覆盖）
+tier3_locked:
+  cudnn_benchmark: false        # 引入不确定性
+  cudnn_deterministic: true
+  mixed_precision: false        # 论文是 FP32
+  train_batch_size_override: false  # 不允许通过 hardware cfg 改训练 batch_size
+
+# 预算
+budget:
+  rmb_per_hour: 2.98
+  total_rmb: 340
+  total_hours: 114.0            # 340 / 2.98
+  performance_assumption: 1.5x  # 相对 RTX 4090（plan §D.1 基准）

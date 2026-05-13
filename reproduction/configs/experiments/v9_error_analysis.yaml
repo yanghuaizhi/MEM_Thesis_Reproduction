@@ -1,0 +1,40 @@
+# reproduction/configs/experiments/v9_error_analysis.yaml — sample-level NPZ 生成
+# 来源: plan §A.2 (Ch3) + run_v9_error_analysis.py
+
+name: v9_error_analysis
+description: |
+  生成 sample-level NPZ，用于 Ch3 PCOC-u 分桶诊断（图 3-1 ~ 3-4 + 热力图）。
+  对每个 (dataset, seed=1024) 用最佳 UAMCM 模型做 inference，保存:
+    y_pred_uncalib, y_pred_calib, y_true, u (=log σ²), sigma_sq
+
+# 依赖：main_99 阶段 4 完成（UAMCM 模型已训练）
+depends_on: main_99
+
+# 仅在 pretrain seed=1024 上做（论文 Ch3 用单 seed）
+seeds: [1024]
+datasets: [aliccp, avazu, criteo]
+
+# 用最佳 UAMCM 模型做 inference
+inference:
+  method: uamcm
+  use_calibrated_output: false  # CRITICAL: Ch3 诊断必须用未校准 backbone 输出
+                                #          （plan §A.5.2 第 1 条审计项）
+  save_calibrated_too: true     # 同时保存校准后输出供对比
+
+# 输出
+output:
+  samples_dir: v9_samples       # 相对 CKPT_ROOT
+  npz_fields:
+    - y_pred_uncalib            # 未校准 backbone 预测
+    - y_pred_calib              # 校准后预测
+    - y_true                    # 真实 label
+    - u                         # log(σ²)（不确定度信号）
+    - sigma_sq                  # 原始 σ² 值
+
+# 后续分析（reproduction/analysis/figures/fig_3_*.py 读取此 NPZ）
+analysis:
+  pcoc_u_bins: 20               # 论文 Ch3 用 20 分位分桶
+  heatmap_p_bins: 10            # 图 3-2 热力图 p 轴
+  heatmap_u_bins: 5             # 图 3-2 热力图 u 轴
+
+estimated_gpu_hours: 2          # 全数据集 inference + 保存

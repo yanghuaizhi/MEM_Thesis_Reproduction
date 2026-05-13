@@ -1,0 +1,53 @@
+# reproduction/configs/paths.yaml — 路径与环境变量
+# 来源: plan §E + UMC/_paths.py 的解析逻辑
+
+name: paths
+
+# 环境变量优先级（_paths.py 读取顺序）
+env_vars:
+  MEM_DATA_ROOT:
+    description: "数据根目录（含 aliccp/avazu/criteo 子目录）"
+    required: false
+    fallback: data/processed   # 相对 30_reproduction/
+  MEM_CKPT_ROOT:
+    description: "checkpoint 与训练产物根目录"
+    required: false
+    fallback: experiments      # 相对 30_reproduction/
+  MEM_TORCH_UNCERTAINTY_SRC:
+    description: "torch-uncertainty 库源码（PackedEnsemble 依赖）"
+    required: false
+    fallbacks:
+      - ../10_research_archive/_archive/torch-uncertainty/src
+      - _archive/torch-uncertainty/src
+  MEM_STATUS_PATH:
+    description: "远程容器状态包写入路径"
+    required: false
+    fallback: /root/status.json
+
+# 本地路径（macOS 开发）
+local:
+  project_root: /Users/y/Research_MEM/30_reproduction
+  data_root: /Users/y/Research_MEM/30_reproduction/data/processed
+  ckpt_root: /Users/y/Research_MEM/30_reproduction/experiments
+  torch_uncertainty_src: /Users/y/Research_MEM/10_research_archive/_archive/torch-uncertainty/src
+
+# 远程容器路径（SSH RTX 5090）
+remote:
+  project_root: /root/shared-nvme/30_reproduction
+  data_root: /root/shared-nvme/30_reproduction/data/processed
+  ckpt_root: /root/shared-nvme/30_reproduction/experiments
+  status_path: /root/status.json
+  # torch-uncertainty: 远程需要 pip install 或同步 _archive 副本
+  torch_uncertainty_src: /root/shared-nvme/30_reproduction/_archive/torch-uncertainty/src
+
+# Gitignored（不入 git）
+gitignored:
+  - data/raw/
+  - data/processed/
+  - experiments/runs/
+  - experiments/backbones/
+  - logs/
+  - "*.pth"
+  - "*.npz"
+  - "*.parquet"
+  - __pycache__/

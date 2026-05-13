@@ -1,0 +1,24 @@
+# reproduction/configs/datasets/criteo.yaml — Criteo 数据集
+# 来源: plan §C.4 + run_v7.py 实测配置
+
+name: criteo
+field_index: 23               # 与 train_neu_criteo.py L66 一致
+
+sparse_feature_count: 39      # 39 个稀疏特征（最多）
+ctr_estimate: 0.002           # ~0.2%
+sample_count_estimate: 50_000_000  # ~50M
+
+batch_size:
+  pretrain: 32768
+  calib: 65536
+  eval_multiplier: 4
+
+paths:
+  subdir: criteo
+  splits:
+    train: data.pkl
+  feature_meta: feature_meta.json
+
+known_issues:
+  - "seed 3024 极端值（ECE 9.23 vs seed 1024 ECE 1.11）— 保留并标注离群（plan §B 第 4 条）"
+  - "模式 B 弱欠预测；shuffled-u 应显著恶化（P3）"

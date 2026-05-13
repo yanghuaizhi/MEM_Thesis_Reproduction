@@ -1,0 +1,10 @@
+# reproduction/configs/methods/ir.yaml — Isotonic Regression
+# 类型: 统计校准方法（非参数单调回归）
+
+name: ir
+type: statistical
+uses_u: false
+entry: train_sta
+description: "Isotonic regression — non-parametric monotonic baseline"
+
+hyperparameters: {}

@@ -1,0 +1,10 @@
+# reproduction/configs/methods/hb.yaml — Histogram Binning
+# 类型: 统计校准方法（分桶常数化）
+
+name: hb
+type: statistical
+uses_u: false
+entry: train_sta
+description: "Histogram binning — bin-wise constant calibration"
+
+hyperparameters: {}

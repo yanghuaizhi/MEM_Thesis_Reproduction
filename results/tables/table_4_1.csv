@@ -1,0 +1,12 @@
+method,aliccp_ece_mean,aliccp_ece_std,aliccp_auc_mean,aliccp_logloss_mean,avazu_ece_mean,avazu_ece_std,avazu_auc_mean,avazu_logloss_mean,criteo_ece_mean,criteo_ece_std,criteo_auc_mean,criteo_logloss_mean
+platt,,,,,,,,,,,,
+ir,,,,,,,,,,,,
+hb,,,,,,,,,,,,
+umnn,,,,,,,,,,,,
+neucalib,,,,,,,,,,,,
+desc,,,,,,,,,,,,
+sbcr,,,,,,,,,,,,
+umc,,,,,,,,,,,,
+umc_wor,,,,,,,,,,,,
+uamcm,,,,,,,,,,,,
+uamcm_wor,,,,,,,,,,,,

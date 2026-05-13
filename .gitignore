@@ -1,0 +1,86 @@
+# ============================================================================
+# 数据与运行时产物（存于 SSH 容器 /root/shared-nvme/，本地不入 git）
+# ============================================================================
+
+# 原始数据 & 预处理数据
+data/raw/
+data/processed/
+*.parquet
+*.tfrecord
+*.bin
+!data/README.md          # 例外：数据元数据 README 入 git
+
+# 实验运行时产物
+experiments/runs/
+experiments/backbones/
+*.pth
+*.pt
+*.ckpt
+*.npz
+predictions.*
+checkpoint.*
+
+# 日志
+logs/
+*.log
+wandb/
+mlruns/
+
+# 状态文件（运行时生成）
+status.json
+*.status
+
+# ============================================================================
+# Python
+# ============================================================================
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.tox/
+htmlcov/
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+
+# ============================================================================
+# 配置局部覆盖（不入 git）
+# ============================================================================
+
+reproduction/configs/paths.local.yaml
+.env
+.env.local
+secrets.yaml
+*.secret
+
+# ============================================================================
+# IDE / OS
+# ============================================================================
+
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# ============================================================================
+# 例外：results/ 全量入 git（论文表格 + 图 + 差异审计，导师重点看）
+# ============================================================================
+
+!results/**
+!results/tables/**
+!results/figures/**
+!results/diff_audit/**
+!results/manifests/**
+
+# 但仍排除 results/ 下的临时文件
+results/**/.DS_Store
+results/**/__pycache__/

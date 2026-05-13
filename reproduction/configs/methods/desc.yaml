@@ -1,0 +1,17 @@
+# reproduction/configs/methods/desc.yaml — DESC (DeepEnsemShapeCalib)
+# 类型: 神经基线（不依赖 u）
+
+name: desc
+type: neural_baseline
+uses_u: false
+entry: train_neu
+description: "Deep Ensemble Shape Calibration"
+
+hyperparameters:
+  lr_calib: 1.0e-3
+  epochs_calib: 20
+  patience: 5
+  min_delta: 1.0e-5
+  selection: loss_best
+  restore_best: true
+  calib_log_every: 200

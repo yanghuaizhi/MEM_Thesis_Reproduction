@@ -1,0 +1,55 @@
+# Conda 环境配置（GPU 容器使用）
+# 创建命令: conda env create -f environment.yml
+# 激活命令: conda activate mem_thesis_repro
+
+name: mem_thesis_repro
+
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+  - defaults
+
+dependencies:
+  # Python & PyTorch（与 RTX 5090 / Blackwell sm_120 兼容）
+  - python=3.10
+  - pytorch=2.7.0
+  - pytorch-cuda=12.4
+
+  # 科学计算
+  - numpy>=1.24
+  - pandas>=2.0
+  - scikit-learn>=1.3
+  - scipy>=1.11
+
+  # 数据 I/O
+  - pyarrow>=12.0
+  - h5py
+
+  # 可视化
+  - matplotlib>=3.7
+  - seaborn>=0.12
+
+  # 工具
+  - pyyaml>=6.0
+  - tqdm>=4.65
+  - tensorboard
+
+  # 开发
+  - pytest>=7.4
+  - ipython>=8.0
+  - jupyter
+
+  # 系统工具（CLI 下载）
+  - aria2
+
+  # 通过 pip 安装的额外依赖
+  - pip
+  - pip:
+    - deepctr-torch>=0.2.9     # DeepFM 基础架构（UMC 依赖）
+    - -e .                      # 本地 reproduction 包
+
+# 注意:
+# 1. RTX 5090 需要 PyTorch 2.7.0+ 才能支持 Blackwell sm_120 compute capability
+# 2. 容器开机后用 nvidia-smi 验证 driver >= 555
+# 3. 如果 aria2 安装失败，可改用 apt-get install aria2 (Ubuntu) 或 brew install aria2 (macOS)

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# 拦截 >20MB 文件入 git（防御 .pth/.npz/原始数据误提交）
+# 启用方式：git config core.hooksPath .githooks
+
+set -euo pipefail
+
+MAX_BYTES=$((20 * 1024 * 1024))
+violating=()
+
+while IFS= read -r -d '' file; do
+    [ -f "$file" ] || continue
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        size=$(stat -f%z "$file" 2>/dev/null || echo 0)
+    else
+        size=$(stat -c%s "$file" 2>/dev/null || echo 0)
+    fi
+    if [ "$size" -gt "$MAX_BYTES" ]; then
+        mb=$(( size / 1024 / 1024 ))
+        violating+=("${file} (${mb}MB)")
+    fi
+done < <(git diff --cached --name-only -z)
+
+if [ ${#violating[@]} -gt 0 ]; then
+    echo "ERROR: 以下文件超过 20MB，禁止入 git:" >&2
+    printf '  %s\n' "${violating[@]}" >&2
+    echo "" >&2
+    echo "处理建议:" >&2
+    echo "  1. 实验产物 (.pth/.npz/.parquet) 应存 /root/shared-nvme/ 不入 git" >&2
+    echo "  2. 如确需提交，考虑 Git LFS: git lfs track <pattern>" >&2
+    echo "  3. 或加入 .gitignore" >&2
+    exit 1
+fi
+
+exit 0

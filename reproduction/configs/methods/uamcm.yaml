@@ -1,0 +1,36 @@
+# reproduction/configs/methods/uamcm.yaml — UAMCM (论文核心)
+# 类型: 论文核心方法（u-aware 3D 积分校准）
+
+name: uamcm
+type: paper_core
+uses_u: true
+entry: train_neu
+description: "Uncertainty-Aware Monotonic Calibration with M (paper §4.3)"
+
+hyperparameters:
+  lr_calib: 1.0e-3
+  epochs_calib: 20
+  patience: 5
+  min_delta: 1.0e-5
+  selection: loss_best
+  restore_best: true
+  calib_log_every: 200
+
+  # UAMCM 特有（plan §C.3 第 10 行）
+  rescaling: true
+  integral_dim: 3             # 积分维度 (p, h_ctx, u)
+  u_min: -20.0
+  u_max: 20.0
+  u_mode: pe                  # 默认；v10 消融时被 experiment 配置覆盖
+  u_use_norm: true
+  u_clip_min: -4.0
+  u_clip_max: 4.0
+  u_use_resid: false
+  u_resid_bins: 20
+
+  # alpha / delta（u 调制）
+  alpha_max: 1.0
+  delta_scale_init: 0.1
+
+  scl_lam: 1.0e-2
+  scl_beta: 0.95

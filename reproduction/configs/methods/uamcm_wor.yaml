@@ -1,0 +1,34 @@
+# reproduction/configs/methods/uamcm_wor.yaml — UAMCM without ranking
+# 类型: 论文核心方法（UAMCM 无 ranking 消融）
+
+name: uamcm_wor
+type: paper_core
+uses_u: true
+entry: train_neu
+description: "UAMCM without ranking — ablation of rescaling=True"
+
+hyperparameters:
+  lr_calib: 1.0e-3
+  epochs_calib: 20
+  patience: 5
+  min_delta: 1.0e-5
+  selection: loss_best
+  restore_best: true
+  calib_log_every: 200
+
+  rescaling: false            # 关闭 ranking
+  integral_dim: 3
+  u_min: -20.0
+  u_max: 20.0
+  u_mode: pe
+  u_use_norm: true
+  u_clip_min: -4.0
+  u_clip_max: 4.0
+  u_use_resid: false
+  u_resid_bins: 20
+
+  alpha_max: 1.0
+  delta_scale_init: 0.1
+
+  scl_lam: 1.0e-2
+  scl_beta: 0.95

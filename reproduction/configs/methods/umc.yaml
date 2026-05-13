@@ -1,0 +1,30 @@
+# reproduction/configs/methods/umc.yaml — UMC (论文核心)
+# 类型: 论文核心方法（u=σ² 单调校准 + ranking）
+
+name: umc
+type: paper_core
+uses_u: true
+entry: train_neu
+description: "Unconstrained Monotonic Calibration with ranking (paper §4.2)"
+
+hyperparameters:
+  lr_calib: 1.0e-3
+  epochs_calib: 20
+  patience: 5
+  min_delta: 1.0e-5
+  selection: loss_best
+  restore_best: true
+  calib_log_every: 200
+
+  # UMC 特有
+  rescaling: true             # ranking loss 开启
+  u_mode: pe                  # "pe" (default) | "shuffled" | "logit"
+  u_use_norm: true
+  u_clip_min: -4.0
+  u_clip_max: 4.0
+  u_use_resid: false
+  u_resid_bins: 20
+
+  # SCL（UMC 不直接用，但 calib/MonotonicNN.py 共享框架）
+  scl_lam: 1.0e-2
+  scl_beta: 0.95

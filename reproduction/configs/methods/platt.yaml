@@ -1,0 +1,11 @@
+# reproduction/configs/methods/platt.yaml — Platt scaling
+# 类型: 统计校准方法（sigmoid logistic regression on logits）
+
+name: platt
+type: statistical
+uses_u: false
+entry: train_sta             # train_sta_{ali,avazu,criteo}.py
+description: "Platt scaling — sigmoid logistic regression baseline"
+
+# 统计方法极快（<30s/run），无校准超参；走 train_sta_*.py 内 sklearn 实现
+hyperparameters: {}

@@ -1,0 +1,26 @@
+# reproduction/configs/datasets/avazu.yaml — Avazu 数据集（OOM-safe 校准 batch）
+# 来源: plan §C.4 + run_v7.py AVAZU_SMALL_BATCH_SIZE 配置
+
+name: avazu
+field_index: 2                # 与 train_neu_avazu.py L66 一致
+
+sparse_feature_count: 24      # 24 个稀疏特征
+ctr_estimate: 0.001           # ~0.1%（更稀疏）
+sample_count_estimate: 40_000_000  # ~40M
+
+# Avazu OOM-safe（plan §B 第 5 条避坑）：u × M=16 ensemble × 64K 显存爆炸
+batch_size:
+  pretrain: 16384             # 1024 * 16
+  calib: 16384                # 1024 * 16（与 pretrain 一致；不是 65536）
+  eval_multiplier: 4
+
+paths:
+  subdir: avazu
+  splits:
+    train: data.pkl
+  feature_meta: feature_meta.json
+
+# Avazu 高 CV 是论文已接受现象（plan §B 第 2 条避坑），不要试图通过改超参降 CV
+known_issues:
+  - "UAMCM ECE std ~4.36（CV 40%）；分别报告每 seed 数值"
+  - "u 与误差非单调（C 模式），shuffled-u 不应显著恶化（P4）"

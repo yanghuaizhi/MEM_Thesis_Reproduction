@@ -1,0 +1,44 @@
+# reproduction/configs/experiments/v10_ablation.yaml — u 信号源消融
+# 来源: plan §A.2 (Ch5) + run_v10_ablation2.py
+
+name: v10_ablation
+description: |
+  u 信号源消融实验：固定 UAMCM 方法，仅变化 u_mode (PE / shuffled / logit)。
+  对应论文 Ch5 表 5-4 + 图 4-2，核心验证 P5 论断（诊断预判 = 实验验证）。
+
+# 依赖：main_99 阶段 1 完成（backbone 已训练）
+depends_on: main_99
+
+# 实验矩阵
+seeds: [1024, 2024, 3024]
+datasets: [aliccp, avazu, criteo]
+methods: [uamcm]                # 仅 UAMCM 做 u_mode 消融
+
+# 关键变量：u_mode
+u_modes:
+  - pe                          # 默认（PackedEnsemble σ² 派生）
+  - shuffled                    # 关键消融：u 与样本顺序解耦
+  - logit                       # 替代源：用 logit 残差代替 u
+
+# shuffled 模式审计要求（plan §A.5.2 第 2 条审计项 + §B 隐含）
+shuffled_audit:
+  required: true
+  check_pearson_corr: true
+  pearson_corr_threshold: 0.01  # |corr(u_orig, u_shuffled)| < 0.01 才算真打乱
+  log_to_metrics: true          # 写入 metrics.jsonl，sanity_check 读
+
+# 总任务量
+totals:
+  runs: 27                      # 3 u_modes × 3 datasets × 3 seeds
+  estimated_gpu_hours: 4
+
+# 后续分析
+analysis:
+  output_csv: summary_v10_ablation.csv
+  expected_pattern:
+    aliccp:
+      shuffled_vs_pe_ece_change: ">+30%"     # 应显著恶化（P2 论断）
+    criteo:
+      shuffled_vs_pe_ece_change: ">+30%"     # 应显著恶化（P3 论断）
+    avazu:
+      shuffled_vs_pe_ece_change: "within_sigma"  # 落在 σ 内（P4 论断）

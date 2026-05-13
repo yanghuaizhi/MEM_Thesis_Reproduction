@@ -1,0 +1,22 @@
+# reproduction/configs/datasets/aliccp.yaml — AliCCP 数据集
+# 来源: plan §C.4 + run_v7.py 实测配置
+
+name: aliccp
+field_index: 0                # u 信号字段位置（与 train_neu_*.py 一致）
+
+sparse_feature_count: 23      # 23 个稀疏特征
+ctr_estimate: 0.002           # ~0.2%
+sample_count_estimate: 10_000_000  # ~10M
+
+# batch size 必须严守此值（plan §B 第 1 条避坑）
+batch_size:
+  pretrain: 32768             # 1024 * 32
+  calib: 65536                # 1024 * 64
+  eval_multiplier: 4          # 推理 batch = batch_size_calib * 4（Tier 1 安全）
+
+# 数据路径相对 MEM_DATA_ROOT 解析
+paths:
+  subdir: aliccp              # data/processed/aliccp/
+  splits:
+    train: data.pkl           # 完整 pkl，train_neu_*.py 内做 60/20/20 split (random_state=1024)
+  feature_meta: feature_meta.json

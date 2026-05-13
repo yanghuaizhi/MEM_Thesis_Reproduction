@@ -1,0 +1,1524 @@
+{
+  "experiments_root": "/Users/y/Research_MEM/30_reproduction/experiments",
+  "stages": {
+    "pretrain": {
+      "stage": "pretrain",
+      "completeness": {
+        "expected": 9,
+        "found": 0,
+        "missing": 9
+      },
+      "per_run": [
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "_backbone",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/aliccp/_backbone/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "_backbone",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/aliccp/_backbone/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "_backbone",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/aliccp/_backbone/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "_backbone",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/avazu/_backbone/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "_backbone",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/avazu/_backbone/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "_backbone",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/avazu/_backbone/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "_backbone",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/criteo/_backbone/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "_backbone",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/criteo/_backbone/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "_backbone",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/pretrain/criteo/_backbone/seed_3024"
+        }
+      ]
+    },
+    "main": {
+      "stage": "main",
+      "completeness": {
+        "expected": 99,
+        "found": 0,
+        "missing": 99
+      },
+      "per_run": [
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "platt",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/platt/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "platt",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/platt/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "platt",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/platt/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "ir",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/ir/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "ir",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/ir/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "ir",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/ir/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "hb",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/hb/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "hb",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/hb/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "hb",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/hb/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umnn",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umnn/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umnn",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umnn/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umnn",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umnn/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "neucalib",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/neucalib/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "neucalib",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/neucalib/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "neucalib",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/neucalib/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "desc",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/desc/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "desc",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/desc/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "desc",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/desc/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "sbcr",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/sbcr/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "sbcr",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/sbcr/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "sbcr",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/sbcr/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umc",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umc/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umc",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umc/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umc",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umc/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umc_wor",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umc_wor/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umc_wor",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umc_wor/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "umc_wor",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/umc_wor/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/uamcm/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/uamcm/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/uamcm/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_wor",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/uamcm_wor/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_wor",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/uamcm_wor/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_wor",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/aliccp/uamcm_wor/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "platt",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/platt/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "platt",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/platt/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "platt",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/platt/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "ir",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/ir/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "ir",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/ir/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "ir",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/ir/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "hb",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/hb/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "hb",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/hb/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "hb",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/hb/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umnn",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umnn/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umnn",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umnn/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umnn",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umnn/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "neucalib",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/neucalib/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "neucalib",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/neucalib/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "neucalib",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/neucalib/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "desc",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/desc/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "desc",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/desc/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "desc",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/desc/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "sbcr",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/sbcr/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "sbcr",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/sbcr/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "sbcr",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/sbcr/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umc",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umc/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umc",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umc/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umc",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umc/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umc_wor",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umc_wor/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umc_wor",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umc_wor/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "umc_wor",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/umc_wor/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/uamcm/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/uamcm/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/uamcm/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_wor",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/uamcm_wor/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_wor",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/uamcm_wor/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_wor",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/avazu/uamcm_wor/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "platt",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/platt/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "platt",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/platt/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "platt",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/platt/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "ir",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/ir/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "ir",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/ir/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "ir",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/ir/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "hb",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/hb/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "hb",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/hb/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "hb",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/hb/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umnn",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umnn/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umnn",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umnn/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umnn",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umnn/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "neucalib",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/neucalib/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "neucalib",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/neucalib/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "neucalib",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/neucalib/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "desc",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/desc/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "desc",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/desc/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "desc",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/desc/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "sbcr",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/sbcr/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "sbcr",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/sbcr/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "sbcr",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/sbcr/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umc",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umc/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umc",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umc/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umc",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umc/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umc_wor",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umc_wor/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umc_wor",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umc_wor/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "umc_wor",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/umc_wor/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/uamcm/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/uamcm/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/uamcm/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_wor",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/uamcm_wor/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_wor",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/uamcm_wor/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_wor",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/main/criteo/uamcm_wor/seed_3024"
+        }
+      ],
+      "per_method_dataset": {}
+    },
+    "v10": {
+      "stage": "v10",
+      "completeness": {
+        "expected": 27,
+        "found": 0,
+        "missing": 27
+      },
+      "per_run": [
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_pe",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_pe/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_pe",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_pe/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_pe",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_pe/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_shuffled",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_shuffled/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_shuffled",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_shuffled/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_shuffled",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_shuffled/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_logit",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_logit/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_logit",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_logit/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "aliccp",
+          "method": "uamcm_umode_logit",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/aliccp/uamcm_umode_logit/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_pe",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_pe/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_pe",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_pe/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_pe",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_pe/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_shuffled",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_shuffled/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_shuffled",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_shuffled/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_shuffled",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_shuffled/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_logit",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_logit/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_logit",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_logit/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "avazu",
+          "method": "uamcm_umode_logit",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/avazu/uamcm_umode_logit/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_pe",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_pe/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_pe",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_pe/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_pe",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_pe/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_shuffled",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_shuffled/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_shuffled",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_shuffled/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_shuffled",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_shuffled/seed_3024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_logit",
+          "seed": 1024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_logit/seed_1024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_logit",
+          "seed": 2024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_logit/seed_2024"
+        },
+        {
+          "issues": [
+            "run_dir missing"
+          ],
+          "metrics": {},
+          "complete": false,
+          "dataset": "criteo",
+          "method": "uamcm_umode_logit",
+          "seed": 3024,
+          "run_dir": "/Users/y/Research_MEM/30_reproduction/experiments/runs/v10/criteo/uamcm_umode_logit/seed_3024"
+        }
+      ],
+      "per_method_dataset": {}
+    }
+  },
+  "total_issues": 135,
+  "m0_passed": false
+}

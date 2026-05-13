@@ -1,0 +1,64 @@
+# reproduction/configs/experiments/main_99.yaml — 主实验（11 方法 × 3 数据集 × 3 seeds）
+# 来源: plan §H 阶段 1-4 + §A.2
+
+name: main_99
+description: |
+  论文 v1.13 Ch4 主结果复现：11 方法 × 3 数据集 × 3 seeds = 99 校准任务
+  + 9 个 PackedDeepFM backbone（3 数据集 × 3 seeds）。
+  通过 reproduction/orchestrator.py 编排，subprocess 调 UMC/{pretrain,train_*}.py。
+
+# 全局 backbone 配置（plan §C.1，必须严格遵守）
+backbone:
+  model_name: packed_deepfm
+  num_estimators: 16          # M=16（plan §C.1 第一行；不可改）
+  pretrain_seed: 1024         # 固定（backbone checkpoint 文件名编码了 seed）
+  lr_pretrain: 5.0e-4
+  l2_reg: 1.0e-5
+  dropout: 0.1
+  init_std: 1.0e-4
+  embedding_dim: 16
+  hidden_units: [512, 256, 128, 64]
+  alpha: 1.0
+  gamma: 1
+  epochs: 20
+  patience: 3                 # backbone patience（与 calib patience 不同）
+  monitor: val_auc
+  mode: max
+
+# 校准实验矩阵
+seeds: [1024, 2024, 3024]     # 3 seeds（plan §C.2）
+datasets: [aliccp, avazu, criteo]
+methods:
+  - platt
+  - ir
+  - hb
+  - umnn
+  - neucalib
+  - desc
+  - sbcr
+  - umc
+  - umc_wor
+  - uamcm
+  - uamcm_wor
+
+# 全局评估配置
+evaluation:
+  ece_bins: 100               # M=100（plan §C.2，不可改）
+  std_ddof: 1                 # Bessel 校正（plan §B 第 6 条避坑）
+  uncertainty_bin_eval: true
+  uncertainty_bin_num_bins: 20
+  metrics: [ece, auc, logloss]
+
+# 总任务量审计
+totals:
+  backbones: 9                # 3 datasets × 3 seeds
+  calib_runs: 99              # 11 methods × 3 datasets × 3 seeds
+  total_tasks: 108
+
+# 估时（RTX 5090 @ 1.5x 基准，plan §D.1）
+estimated_gpu_hours:
+  backbone: 28
+  statistical: 1              # platt + ir + hb
+  neural_baseline: 13         # umnn + neucalib + desc + sbcr
+  paper_core: 17              # umc + umc_wor + uamcm + uamcm_wor
+  total: 59
