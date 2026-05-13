@@ -18,7 +18,8 @@ hyperparameters:
 
   # UAMCM 特有（plan §C.3 第 10 行）
   rescaling: true
-  integral_dim: 3             # 积分维度 (p, h_ctx, u)
+  # 注: integral_dim 之前列在 plan §C.3 但 UAMCM 构造函数无此参数（代码硬编码
+  # 3 维积分 (p, h_ctx, u)）。从 YAML 移除以免误导。
   u_min: -20.0
   u_max: 20.0
   u_mode: pe                  # 默认；v10 消融时被 experiment 配置覆盖

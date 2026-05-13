@@ -2,11 +2,12 @@
 # 来源: plan §C.4 + run_v7.py AVAZU_SMALL_BATCH_SIZE 配置
 
 name: avazu
-field_index: 2                # 与 train_neu_avazu.py L66 一致
+field_index: 2                # 与 train_neu_avazu.py L66 一致；指向 site_id（去掉 id/click/hour 后的第 3 列）
 
-sparse_feature_count: 24      # 24 个稀疏特征
-ctr_estimate: 0.001           # ~0.1%（更稀疏）
-sample_count_estimate: 40_000_000  # ~40M
+sparse_feature_count: 21      # ipynb Cell 7 `columns[3:]` 切片，含 C1, banner_pos, site_id..C21
+field_name_at_index: site_id  # u 信号挂钩特征
+ctr_empirical: 0.1631         # 实测 CTR ~16.31% (archive v9 samples N=8M; Kaggle 标准 17%)
+sample_count_estimate: 40_000_000  # Kaggle 原始 ~40M; v9 sample ~8M
 
 # Avazu OOM-safe（plan §B 第 5 条避坑）：u × M=16 ensemble × 64K 显存爆炸
 batch_size:

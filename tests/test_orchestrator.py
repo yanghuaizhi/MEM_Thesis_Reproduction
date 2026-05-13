@@ -18,13 +18,18 @@ def configs():
     return _load_configs()
 
 
-def test_pretrain_plan_has_9_runs(configs):
+def test_pretrain_plan_has_3_runs(configs):
+    """FIX-3: pretrain 只跑 3 个（每数据集 seed=1024 固定）。
+
+    backbone checkpoint 文件名编码 seed，calib 永远加载 seed=1024 的 backbone，
+    所以 seed=2024/3024 的 backbone 训完即弃，必须省。
+    """
     from reproduction.orchestrator import _build_pretrain_plan
 
     runs = _build_pretrain_plan(configs)
-    assert len(runs) == 9                    # 3 datasets × 3 seeds
-    seeds = sorted({r["seed"] for r in runs})
-    assert seeds == [1024, 2024, 3024]
+    assert len(runs) == 3                    # 3 datasets × 1 fixed seed
+    seeds = {r["seed"] for r in runs}
+    assert seeds == {1024}                   # 固定 1024
     datasets = sorted({r["dataset"] for r in runs})
     assert datasets == ["aliccp", "avazu", "criteo"]
 
@@ -82,7 +87,10 @@ def test_config_update_critical_fields(configs):
     assert cu["seed"] == 1024                # backbone seed 固定
     assert cu["calib_seed"] in (1024, 2024, 3024)
     assert cu["batch_size_calib"] == 65536   # AliCCP non-OOM-safe
-    assert cu["integral_dim"] == 3           # UAMCM 特有
+    # FIX-4: integral_dim 字段已删，UAMCM 不应传入
+    assert "integral_dim" not in cu
+    # FIX-5: uncertainty_bin_save_path 必须注入
+    assert "uncertainty_bin_save_path" in cu
 
 
 def test_avazu_uamcm_uses_16k_batch(configs):

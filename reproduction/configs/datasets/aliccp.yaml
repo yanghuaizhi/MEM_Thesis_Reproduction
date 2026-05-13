@@ -4,9 +4,9 @@
 name: aliccp
 field_index: 0                # u 信号字段位置（与 train_neu_*.py 一致）
 
-sparse_feature_count: 23      # 23 个稀疏特征
-ctr_estimate: 0.002           # ~0.2%
-sample_count_estimate: 10_000_000  # ~10M
+sparse_feature_count: 14      # ipynb 最终保留 14 个稀疏特征（9 user + 5 item）
+ctr_empirical: 0.0333         # 实测 CTR ~3.33% (archive v9 samples N=17M)
+sample_count_estimate: 17_000_000  # 实测 N≈17M (train + test)
 
 # batch size 必须严守此值（plan §B 第 1 条避坑）
 batch_size:

@@ -8,14 +8,15 @@
     app_id, app_domain, app_category, device_id, device_ip, device_model,
     device_type, device_conn_type, C14, C15, C16, C17, C18, C19, C20, C21
 
-预处理（参考 UMC/dataset/avazu_process.ipynb）:
-    1. 去掉前 3 列 (id, click, hour) 中的 id 和 hour，保留 click 作 label
-    2. 其余 21 列作稀疏特征（OrdinalEncoder）
-    3. 论文 field_index=2 指向 banner_pos 字段（u 信号挂钩位置）
+预处理（严格对齐 UMC/dataset/avazu_process.ipynb Cell 7）:
+    sparse_features = list(avazu_data.columns)[3:]   # 切片从 C1 开始
+    # 即 21 列稀疏，去掉 id/click/hour 前 3 列
 
-实际 sparse_features 列数 = 24 - 3 (id, click, hour) = 21；但 plan §C.4 说
-Avazu sparse_feature_count=24（含 hour 等被 encode 的 3 列），所以预处理
-保留 hour + C1 + banner_pos 作为前 3 列（field_index=2 指 banner_pos）。
+    OrdinalEncoder().fit_transform(avazu_data[sparse_features])
+    save_data = avazu_data[sparse_features + ['click']]
+
+field_index=2 在 ipynb 列序 [C1, banner_pos, site_id, ...] 中 = **site_id**
+（u 信号挂钩字段；与 train_neu_avazu.py L66 一致）。
 
 CLI:
     python -m reproduction.data.preprocess.avazu
@@ -30,16 +31,21 @@ from typing import List
 from ._common import resolve_paths, encode_sparse_features, write_pkl_and_meta
 
 
-# Avazu sparse features（与原 ipynb 一致：去掉 id，保留 click 作 label）
+# Avazu sparse features（严格对齐 ipynb Cell 7: columns[3:]，去掉 id/click/hour）
+# 列序: C1, banner_pos, site_id (index=2), site_domain, site_category, ...
 AVAZU_SPARSE_FEATURES: List[str] = [
-    "hour", "C1", "banner_pos",                  # field_index=2 指 banner_pos
-    "site_id", "site_domain", "site_category",
+    "C1", "banner_pos",
+    "site_id", "site_domain", "site_category",        # site_id 在 index=2（field_index 指此）
     "app_id", "app_domain", "app_category",
     "device_id", "device_ip", "device_model",
     "device_type", "device_conn_type",
     "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21",
 ]
-FIELD_INDEX_AVAZU = 2                            # 与 train_neu_avazu.py L66 一致
+# 21 columns total
+assert len(AVAZU_SPARSE_FEATURES) == 21, f"expected 21, got {len(AVAZU_SPARSE_FEATURES)}"
+
+FIELD_INDEX_AVAZU = 2                            # 指向 site_id（train_neu_avazu.py L66 一致）
+FIELD_NAME_AVAZU = "site_id"                     # u 信号挂钩特征
 
 
 def main() -> int:

@@ -77,9 +77,12 @@ def test_paper_core_uses_u():
         assert cfg["uses_u"] is True
 
 
-def test_uamcm_integral_dim():
+def test_uamcm_no_invalid_integral_dim():
+    """FIX-4: integral_dim 应已从 YAML 移除（UAMCM 构造函数无此参数）。"""
     cfg = yaml.safe_load((_CFG / "methods" / "uamcm.yaml").read_text())
-    assert cfg["hyperparameters"]["integral_dim"] == 3
+    assert "integral_dim" not in cfg.get("hyperparameters", {})
+    cfg_wor = yaml.safe_load((_CFG / "methods" / "uamcm_wor.yaml").read_text())
+    assert "integral_dim" not in cfg_wor.get("hyperparameters", {})
 
 
 def test_hardware_tier3_locked():

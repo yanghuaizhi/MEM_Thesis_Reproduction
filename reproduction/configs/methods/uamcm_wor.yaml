@@ -17,7 +17,7 @@ hyperparameters:
   calib_log_every: 200
 
   rescaling: false            # 关闭 ranking
-  integral_dim: 3
+  # 注: integral_dim 字段已移除（UAMCM 构造函数无此参数，代码硬编码 3 维积分）
   u_min: -20.0
   u_max: 20.0
   u_mode: pe

@@ -41,7 +41,12 @@ from ._common import resolve_paths, encode_sparse_features, write_pkl_and_meta
 USER_FEATURE_KEYS: List[str] = ["101", "121", "122", "124", "125", "126", "127", "128", "129"]
 ITEM_FEATURE_KEYS: List[str] = ["205", "206", "207", "216", "301"]
 ALL_FEATURE_KEYS: List[str] = USER_FEATURE_KEYS + ITEM_FEATURE_KEYS   # 14
-FIELD_INDEX_ALICCP = 0   # 与 train_neu_ali.py L66 一致（首列 '101'=用户ID）
+# field_index=0 指向首列 '101'（用户ID）。
+# 注：train_neu_ali.py L66 的 Config.field_index 默认 2，但 L981 的 trial() 入口
+# dict 覆盖为 0；trial 是 UMC 实际执行入口，所以**运行时生效值是 0**。
+# 与 reproduction/configs/datasets/aliccp.yaml `field_index: 0` 一致。
+FIELD_INDEX_ALICCP = 0
+FIELD_NAME_ALICCP = "101"      # u 信号挂钩特征（用户ID）
 
 
 # chunk sizes（与 ipynb 一致）

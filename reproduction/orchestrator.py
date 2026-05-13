@@ -98,44 +98,52 @@ def _load_configs() -> Dict[str, Dict[str, Any]]:
 # ============================================================================
 
 def _build_pretrain_plan(configs: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """生成 9 个 backbone 任务（3 datasets × 3 seeds）。"""
+    """生成 3 个 backbone 任务（3 datasets × 1 fixed seed=1024）。
+
+    设计:
+        - backbone checkpoint 文件名编码了 seed（train_neu_*.py L196-211
+          的 experiment_name），calib 阶段永远加载 seed=1024 的 backbone
+          （`_build_calib_config_update` 传 `seed: backbone["pretrain_seed"]`）。
+        - 因此跑 seed=2024/3024 的 backbone 没有意义（calib 不会用）。
+        - 校准 3 seeds 仍在 calib 阶段通过 `calib_seed` 实现（共用同一 backbone）。
+    """
     main = configs["experiments"]["main_99"]
     backbone = main["backbone"]
+    pretrain_seed = int(backbone["pretrain_seed"])    # 固定 1024
     runs: List[Dict[str, Any]] = []
     for dataset in main["datasets"]:
         ds = configs["datasets"][dataset]
-        for seed in main["seeds"]:
-            cu = {
-                "data_name": dataset,
-                "model_name": backbone["model_name"],
-                "batch_size": ds["batch_size"]["pretrain"],
-                "dropout": backbone["dropout"],
-                "init_std": backbone["init_std"],
-                "lr": backbone["lr_pretrain"],
-                "l2_reg": backbone["l2_reg"],
-                "embedding_dim": backbone["embedding_dim"],
-                "num_estimators": backbone["num_estimators"],  # 16
-                "alpha": backbone["alpha"],
-                "gamma": backbone["gamma"],
-                "seed": seed,
-                "epochs": backbone["epochs"],
-                "patience": backbone["patience"],
-                "monitor": backbone["monitor"],
-                "mode": backbone["mode"],
-                "num_workers": configs["hardware"]["rtx5090"]["dataloader"]["num_workers"],
-                "pin_memory": configs["hardware"]["rtx5090"]["dataloader"]["pin_memory"],
-                "persistent_workers": configs["hardware"]["rtx5090"]["dataloader"]["persistent_workers"],
+        cu = {
+            "data_name": dataset,
+            "model_name": backbone["model_name"],
+            "batch_size": ds["batch_size"]["pretrain"],
+            "dropout": backbone["dropout"],
+            "init_std": backbone["init_std"],
+            "lr": backbone["lr_pretrain"],
+            "l2_reg": backbone["l2_reg"],
+            "embedding_dim": backbone["embedding_dim"],
+            "num_estimators": backbone["num_estimators"],  # 16
+            "alpha": backbone["alpha"],
+            "gamma": backbone["gamma"],
+            "seed": pretrain_seed,                    # 固定 1024
+            "epochs": backbone["epochs"],
+            "patience": backbone["patience"],
+            "monitor": backbone["monitor"],
+            "mode": backbone["mode"],
+            "num_workers": configs["hardware"]["rtx5090"]["dataloader"]["num_workers"],
+            "pin_memory": configs["hardware"]["rtx5090"]["dataloader"]["pin_memory"],
+            "persistent_workers": configs["hardware"]["rtx5090"]["dataloader"]["persistent_workers"],
+        }
+        runs.append(
+            {
+                "stage": "pretrain",
+                "entry": "pretrain",
+                "dataset": dataset,
+                "method": "_backbone",
+                "seed": pretrain_seed,
+                "config_update": cu,
             }
-            runs.append(
-                {
-                    "stage": "pretrain",
-                    "entry": "pretrain",
-                    "dataset": dataset,
-                    "method": "_backbone",
-                    "seed": seed,
-                    "config_update": cu,
-                }
-            )
+        )
     return runs
 
 
@@ -169,6 +177,9 @@ def _build_main_plan(
                     main=main,
                     hw=hw,
                 )
+                # FIX-5: 注入 uncertainty_bin_save_path 让 csv 落盘
+                run_dir = _run_dir("main", dataset, method, seed)
+                cu["uncertainty_bin_save_path"] = str(run_dir / "uncertainty_bins.csv")
                 runs.append(
                     {
                         "stage": "main",
@@ -242,8 +253,8 @@ def _build_calib_config_update(
                       "u_use_resid", "u_resid_bins"):
                 if k in hp:
                     cu[k] = hp[k]
-            # UAMCM 特定
-            for k in ("integral_dim", "u_min", "u_max",
+            # UAMCM 特定（integral_dim 已从 YAML 移除：UAMCM 构造函数无此参数）
+            for k in ("u_min", "u_max",
                       "alpha_max", "delta_scale_init"):
                 if k in hp:
                     cu[k] = hp[k]
@@ -296,12 +307,16 @@ def _build_v10_plan(configs: Dict[str, Any]) -> List[Dict[str, Any]]:
                         ds=ds, mcfg=mcfg, main=main, hw=hw,
                     )
                     cu["u_mode"] = u_mode           # 覆盖
+                    # FIX-5: 同 main，注入 uncertainty_bin_save_path
+                    method_dir_name = f"{method}_umode_{u_mode}"
+                    run_dir = _run_dir("v10", dataset, method_dir_name, seed)
+                    cu["uncertainty_bin_save_path"] = str(run_dir / "uncertainty_bins.csv")
                     runs.append(
                         {
                             "stage": "v10",
                             "entry": mcfg["entry"],
                             "dataset": dataset,
-                            "method": f"{method}_umode_{u_mode}",
+                            "method": method_dir_name,
                             "seed": seed,
                             "config_update": cu,
                         }

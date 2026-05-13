@@ -4,9 +4,9 @@
 name: criteo
 field_index: 23               # 与 train_neu_criteo.py L66 一致
 
-sparse_feature_count: 39      # 39 个稀疏特征（最多）
-ctr_estimate: 0.002           # ~0.2%
-sample_count_estimate: 50_000_000  # ~50M
+sparse_feature_count: 39      # 13 numerical (I1-I13) + 26 categorical (C1-C26)
+ctr_empirical: 0.2565         # 实测 CTR ~25.65% (archive data_meta.json: 0.2562; Criteo 标准)
+sample_count_estimate: 45_840_617  # archive data_meta.json 实测 (Criteo train.txt 7 days)
 
 batch_size:
   pretrain: 32768

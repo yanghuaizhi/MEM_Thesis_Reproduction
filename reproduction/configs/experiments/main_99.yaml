@@ -51,14 +51,15 @@ evaluation:
 
 # 总任务量审计
 totals:
-  backbones: 9                # 3 datasets × 3 seeds
-  calib_runs: 99              # 11 methods × 3 datasets × 3 seeds
-  total_tasks: 108
+  backbones: 3                # 3 datasets × 1 seed=1024 (FIX-3: pretrain seed 固定，
+                              # 跑多 seed 无意义因 calib 永远加载 seed=1024 的 backbone)
+  calib_runs: 99              # 11 methods × 3 datasets × 3 seeds（calib_seed 实现多 seed）
+  total_tasks: 102
 
 # 估时（RTX 5090 @ 1.5x 基准，plan §D.1）
 estimated_gpu_hours:
-  backbone: 28
+  backbone: 9.3               # 4+2+3.3 h × 1 seed（原 28h 是 3 seed 浪费）
   statistical: 1              # platt + ir + hb
   neural_baseline: 13         # umnn + neucalib + desc + sbcr
   paper_core: 17              # umc + umc_wor + uamcm + uamcm_wor
-  total: 59
+  total: 40.3                 # 节省 ~19h ≈ 56 元

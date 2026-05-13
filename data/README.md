@@ -4,12 +4,15 @@
 
 ## 数据集清单
 
-| 数据集 | 业务场景 | 样本量 | 正样本率 | 特征数 | 大小（原始） | 大小（处理后） |
+| 数据集 | 业务场景 | 样本量（实测）| 正样本率（实测）| 特征数 | 大小（原始） | 大小（处理后） |
 |--------|---------|--------|---------|--------|------------|--------------|
-| AliCCP | 阿里电商 | ~10M | ~3.8% | 23 | ~15GB | ~3GB parquet |
-| Avazu  | 移动广告 | ~40M | ~17% | 24 | ~5GB | ~2GB parquet |
-| Criteo | 展示广告 | ~50M | ~26% | 39 | ~12GB | ~4GB parquet |
-| **合计** | -- | ~100M | -- | -- | **~32GB** | **~9GB** |
+| AliCCP | 阿里电商 | ~17M | **3.33%** | 14（9 user + 5 item）| ~15GB | ~3GB pkl |
+| Avazu  | 移动广告 | ~40M (v9 sample ~8M) | **16.31%** | 21（columns[3:] from C1）| ~5GB | ~2GB pkl |
+| Criteo | 展示广告 | ~45.8M | **25.65%** | 39（13 I + 26 C）| ~11GB | ~7GB pkl |
+| **合计** | -- | ~100M | -- | -- | **~31GB** | **~12GB** |
+
+注：CTR 与样本量来自 `10_research_archive/ckpt/v9_error_analysis/samples/*.npz`
+和 `10_research_archive/dataset/criteo/artifacts/data_meta.json`（实测数据，非估算）。
 
 ## 下载源（优先级排序）
 
