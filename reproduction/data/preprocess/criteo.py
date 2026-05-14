@@ -1,112 +1,199 @@
-"""Criteo 预处理 — 严格迁移自 archive ground truth 实现。
+"""Criteo 预处理 — chunked 两遍扫，避免一次性加载 11GB TSV。
+
+挂死现场（2026-05-14 14:12）：pd.read_csv 一次读 11G train.txt，在 vast 网络挂载存储 +
+pandas C engine 单线程解析下长时间无 stdout flush，看起来"挂死"。
+
+工程修改（**不影响数值，与 archive ground truth 算法 1:1 等价**）：
+- 流式 chunked 读，单 chunk ~640MB DataFrame 峰值
+- Pass 1: 累积 numeric (sign, bucket) unique 集 + 全局 max_bucket + cat value_counts
+- Pass 2: 流式编码，写入 pre-allocated int32 ndarray (N, 39)
+
+算法等价性证明：
+- Numeric: sklearn LabelEncoder.fit_transform 顺序 = sorted(unique compound) 分配 0,1,2,...
+  Chunked 累积所有 (sign, bucket) → 重建 compound = sign * (global_max_bucket+1) + bucket
+  → sorted 分配 id ⇒ 与 archive 完全等价
+- Categorical: pandas Categorical.cat.codes 顺序 = sorted(categories) lexicographic
+  Chunked 累积 value_counts → sorted(non_rare) 分配 id 2,3,4,... ⇒ 与 archive 完全等价
 
 ground truth: /Users/y/Research_MEM/10_research_archive/dataset/criteo/preprocess_criteo.py
-（论文 v1.13 实验实际使用，签名命名 signed_log1p_square_tokens）
-
-输入: data/raw/criteo/train.txt  (Criteo 标准 TSV: label + I1..I13 + C1..C26)
-输出: data/processed/criteo/data.pkl + data_meta.json + feature_summary.csv
-
-预处理算法（archive 真值）:
-    数值特征 I1-I13:
-        NaN          → "__MISSING__"
-        x < 0        → "NEG_{floor(log1p(-x)^2)}"
-        x == 0       → "ZERO"
-        x > 0        → "POS_{floor(log1p(x)^2)}"
-        然后 LabelEncoder 整体 fit_transform
-    类别特征 C1-C26:
-        rare-merging: 出现 <min_count(=10) 次 → __rare__ (code=1)
-        缺失值 → __missing__ (code=0)
-        其余 → code 2,3,4,...
-    列序:  [I1..I13, C1..C26, label]  (39 sparse + label)
-    label 列名 'label' (与 archive 一致)；UMC get_data() 用 columns[-1] 不挑名字
 
 CLI:
-    python -m reproduction.data.preprocess.criteo [--min-count 10]
+    python -m reproduction.data.preprocess.criteo [--min-count 10] [--chunk-rows 2000000]
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import sys
+from collections import Counter
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
 
 from ._common import resolve_paths
 
 
-# Criteo 标准列定义（与 archive 一致）
-NUM_COLS: List[str] = [f"I{i}" for i in range(1, 14)]      # 13 numeric
-CAT_COLS: List[str] = [f"C{i}" for i in range(1, 27)]      # 26 categorical
-ALL_FEATURES: List[str] = NUM_COLS + CAT_COLS              # 39 sparse
-ALL_COLS_INPUT: List[str] = ["label"] + NUM_COLS + CAT_COLS  # 输入 TSV 列序（label 在首）
-FIELD_INDEX_CRITEO = 23                                    # 与 train_neu_criteo.py L66 一致
-# 列序 [I1..I13, C1..C26]，index=23 = (23 - 13 + 1) = C11
+NUM_COLS: List[str] = [f"I{i}" for i in range(1, 14)]
+CAT_COLS: List[str] = [f"C{i}" for i in range(1, 27)]
+ALL_FEATURES: List[str] = NUM_COLS + CAT_COLS
+ALL_COLS_INPUT: List[str] = ["label"] + NUM_COLS + CAT_COLS
+FIELD_INDEX_CRITEO = 23
 FIELD_NAME_CRITEO = "C11"
+DEFAULT_CHUNK_ROWS = 2_000_000               # ~52MB raw TSV / chunk，单 chunk DF 峰值 ~640MB
 
 
-def encode_numeric_column_vectorized(series: pd.Series) -> Tuple[np.ndarray, int]:
-    """向量化数值特征编码（archive 真值实现）。
+def _read_chunks(path: Path, chunk_rows: int):
+    """Stream TSV in row chunks. CAT cols as nullable string (NOT category)."""
+    dtypes: dict = {"label": "int8"}
+    dtypes.update({f"I{i}": "float64" for i in range(1, 14)})
+    dtypes.update({f"C{i}": "string" for i in range(1, 27)})
+    return pd.read_csv(
+        path,
+        sep="\t",
+        header=None,
+        names=ALL_COLS_INPUT,
+        dtype=dtypes,
+        chunksize=chunk_rows,
+        engine="c",
+    )
 
-    映射到 (sign, bucket) compound key，再 LabelEncoder。
-    与 scalar `bucket_numeric_token` 产生相同 token 集合（仅 LE id 顺序差异，
-    对从头训练的 embedding 表无影响）。
 
-    Returns: (encoded_int32_array, n_unique_tokens)
-    """
-    values = series.values.astype(np.float64)
+def _numeric_sign_bucket(values: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Compute (sign, bucket, is_missing). 1:1 等价 archive encode_numeric_column_vectorized 的前半段。"""
     is_missing = np.isnan(values)
     safe = np.where(is_missing, 0.0, values)
-
-    bucket = np.floor(np.log1p(np.abs(safe)) ** 2).astype(np.int32)
-    max_bucket = int(bucket.max()) + 1
-
-    # sign: 0=MISSING, 1=ZERO, 2=NEG, 3=POS
+    bucket = np.floor(np.log1p(np.abs(safe)) ** 2).astype(np.int64)
     sign = np.where(
         is_missing, 0,
         np.where(safe < 0, 2, np.where(safe > 0, 3, 1)),
-    ).astype(np.int32)
-
-    compound = sign * max_bucket + bucket
-    le = LabelEncoder()
-    encoded = le.fit_transform(compound).astype(np.int32)
-    return encoded, len(le.classes_)
+    ).astype(np.int64)
+    return sign, bucket, is_missing
 
 
-def encode_categorical_with_rare(cat_series: pd.Series, min_count: int = 10) -> Tuple[np.ndarray, int, float]:
-    """类别特征 rare-merging 编码（archive 真值实现）。
+def _pass1_scan_vocab(path: Path, chunk_rows: int):
+    """Pass 1: stream-scan to collect vocab info per column."""
+    num_pairs: Dict[str, set] = {c: set() for c in NUM_COLS}
+    num_max_bucket: Dict[str, int] = {c: 0 for c in NUM_COLS}
+    cat_counts: Dict[str, Counter] = {c: Counter() for c in CAT_COLS}
+    col_missing: Dict[str, int] = {c: 0 for c in ALL_COLS_INPUT}
+    total_rows = 0
+    label_pos = 0
 
-    vocab 布局: 0=__missing__, 1=__rare__, 2..N=normal categories
-    """
-    cat_codes = cat_series.cat.codes.values
-    n_raw_unique = len(cat_series.cat.categories)
+    for chunk_idx, chunk in enumerate(_read_chunks(path, chunk_rows)):
+        n = len(chunk)
+        total_rows += n
+        label_pos += int(chunk["label"].sum())
 
-    valid = cat_codes[cat_codes >= 0]
-    code_counts = np.bincount(valid, minlength=n_raw_unique)
+        for col in NUM_COLS:
+            vals = chunk[col].values.astype(np.float64)
+            sign, bucket, is_missing = _numeric_sign_bucket(vals)
+            col_missing[col] += int(is_missing.sum())
+            if bucket.size:
+                mb = int(bucket.max())
+                if mb > num_max_bucket[col]:
+                    num_max_bucket[col] = mb
+            # Pack (sign, bucket) into int64 for fast numpy unique + set update
+            packed = (sign << np.int64(40)) | bucket
+            num_pairs[col].update(np.unique(packed).tolist())
 
-    rare_mask = code_counts < min_count
-    rare_count = int(code_counts[rare_mask].sum())
-    rare_rate = rare_count / len(cat_codes) if len(cat_codes) > 0 else 0.0
+        for col in CAT_COLS:
+            s = chunk[col]
+            col_missing[col] += int(s.isna().sum())
+            valid = s.dropna()
+            if len(valid) > 0:
+                vc = valid.value_counts(sort=False)
+                for k, v in vc.items():
+                    cat_counts[col][k] += int(v)
 
-    cat_map = np.full(n_raw_unique, 1, dtype=np.int32)              # 默认 rare
-    non_rare = ~rare_mask
-    cat_map[non_rare] = np.arange(2, 2 + int(non_rare.sum()), dtype=np.int32)
-    vocab_size = 2 + int(non_rare.sum())
+        if chunk_idx == 0 or (chunk_idx + 1) % 5 == 0:
+            print(f"[criteo]   Pass 1 chunk {chunk_idx+1} rows_so_far={total_rows:,}", flush=True)
 
-    safe_codes = np.where(cat_codes >= 0, cat_codes, 0)
-    encoded = np.where(cat_codes >= 0, cat_map[safe_codes], 0).astype(np.int32)
-    return encoded, vocab_size, rare_rate
+    return num_pairs, num_max_bucket, cat_counts, col_missing, total_rows, label_pos
+
+
+def _build_encoders(num_pairs, num_max_bucket, cat_counts, total_rows, min_count):
+    """Pass 1.5: build vocab → id encoders matching archive semantics."""
+    num_encoders: Dict[str, Tuple[int, np.ndarray]] = {}
+    cat_encoders: Dict[str, Tuple[Dict[str, int], int, float]] = {}
+    feature_extra: Dict[str, dict] = {}
+
+    for col in NUM_COLS:
+        max_bucket_p1 = num_max_bucket[col] + 1            # +1 等价 archive `int(bucket.max()) + 1`
+        compounds: List[int] = []
+        for packed in num_pairs[col]:
+            s_val = packed >> 40
+            b_val = packed & ((1 << 40) - 1)
+            compounds.append(int(s_val * max_bucket_p1 + b_val))
+        compound_sorted = sorted(compounds)
+        # Flat lookup: index = compound value, value = id; sign max=3, so 4*max_bucket_p1 suffices
+        lookup_size = 4 * max_bucket_p1
+        lookup = np.full(lookup_size, -1, dtype=np.int32)
+        for i, c_val in enumerate(compound_sorted):
+            lookup[c_val] = i
+        num_encoders[col] = (max_bucket_p1, lookup)
+        feature_extra[col] = {"type": "numeric_bucketed", "vocab": len(compound_sorted)}
+
+    for col in CAT_COLS:
+        counts = cat_counts[col]
+        all_sorted = sorted(counts.keys())                  # lexicographic = archive cat.categories 顺序
+        non_rare = [v for v in all_sorted if counts[v] >= min_count]
+        rare_count = sum(c for v, c in counts.items() if c < min_count)
+        rare_rate = rare_count / total_rows if total_rows > 0 else 0.0
+        val_to_id = {v: i + 2 for i, v in enumerate(non_rare)}      # 0=missing, 1=rare, 2+=normal
+        vocab_size = 2 + len(non_rare)
+        cat_encoders[col] = (val_to_id, vocab_size, rare_rate)
+        feature_extra[col] = {
+            "type": "categorical",
+            "raw_unique": len(all_sorted),
+            "rare_rate": rare_rate,
+            "vocab": vocab_size,
+        }
+
+    return num_encoders, cat_encoders, feature_extra
+
+
+def _pass2_encode(path, total_rows, chunk_rows, num_encoders, cat_encoders):
+    """Pass 2: stream-apply encoders, write into pre-allocated int32 arrays."""
+    encoded = np.empty((total_rows, 39), dtype=np.int32)
+    labels = np.empty(total_rows, dtype=np.int32)
+    row_offset = 0
+
+    for chunk_idx, chunk in enumerate(_read_chunks(path, chunk_rows)):
+        n = len(chunk)
+        end = row_offset + n
+        labels[row_offset:end] = chunk["label"].values.astype(np.int32)
+
+        for ci, col in enumerate(NUM_COLS):
+            max_bucket_p1, lookup = num_encoders[col]
+            vals = chunk[col].values.astype(np.float64)
+            sign, bucket, _ = _numeric_sign_bucket(vals)
+            compound = (sign * max_bucket_p1 + bucket).astype(np.int64)
+            compound = np.clip(compound, 0, len(lookup) - 1)        # defensive; Pass 1 already saw all
+            encoded[row_offset:end, ci] = lookup[compound]
+
+        for ci, col in enumerate(CAT_COLS):
+            val_to_id, _, _ = cat_encoders[col]
+            s = chunk[col]
+            not_na = s.notna().values
+            s_filled = s.fillna("")
+            mapped = s_filled.map(val_to_id).fillna(1).astype(np.int32).values
+            codes = np.where(not_na, mapped, 0).astype(np.int32)    # 0 if NA, else mapped (rare=1)
+            encoded[row_offset:end, 13 + ci] = codes
+
+        row_offset = end
+        if chunk_idx == 0 or (chunk_idx + 1) % 5 == 0:
+            print(f"[criteo]   Pass 2 chunk {chunk_idx+1} rows_encoded={row_offset:,}", flush=True)
+
+    assert row_offset == total_rows, f"row count mismatch: {row_offset} vs {total_rows}"
+    return encoded, labels
 
 
 def qc_gate(df: pd.DataFrame) -> dict:
-    """QC: 列序、列数、label 二值、特征非负。archive L129-147。"""
     expected_cols = NUM_COLS + CAT_COLS + ["label"]
     if list(df.columns) != expected_cols:
         raise ValueError(f"Column order mismatch: {list(df.columns)[:5]}...")
@@ -130,6 +217,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--min-count", type=int, default=10,
                     help="Rare threshold for categorical features (archive default 10)")
+    ap.add_argument("--chunk-rows", type=int, default=DEFAULT_CHUNK_ROWS,
+                    help=f"Rows per streaming chunk (default {DEFAULT_CHUNK_ROWS:,})")
     args = ap.parse_args()
 
     raw_dir, processed_dir = resolve_paths("criteo")
@@ -146,61 +235,54 @@ def main() -> int:
             return 1
 
     started_at = datetime.now().isoformat(timespec="seconds")
-    print(f"[criteo] reading {raw_tsv}")
-    dtypes: dict = {"label": "int8"}
-    dtypes.update({f"I{i}": "float64" for i in range(1, 14)})
-    dtypes.update({f"C{i}": "category" for i in range(1, 27)})
+    input_stat = os.stat(raw_tsv)
+    print(f"[criteo] streaming chunked preprocess (chunk_rows={args.chunk_rows:,})", flush=True)
+    print(f"[criteo] input: {raw_tsv} ({input_stat.st_size:,} bytes)", flush=True)
 
-    df = pd.read_csv(
-        raw_tsv,
-        sep="\t",
-        header=None,
-        names=ALL_COLS_INPUT,
-        dtype=dtypes,
-    )
-    if df.shape[1] != 40:
-        print(f"[criteo] ERROR: unexpected input columns: {df.shape[1]}")
-        return 1
-    rows = int(len(df))
-    print(f"[criteo] loaded shape={df.shape}, ctr={df['label'].mean():.6f}")
+    print(f"[criteo] Pass 1/2: scanning for vocab", flush=True)
+    num_pairs, num_max_bucket, cat_counts, col_missing, total_rows, label_pos = \
+        _pass1_scan_vocab(raw_tsv, args.chunk_rows)
+    print(f"[criteo] Pass 1 done: rows={total_rows:,} ctr={label_pos/total_rows:.6f}", flush=True)
 
-    missing_rate_raw = {col: float(df[col].isna().mean()) for col in ALL_COLS_INPUT}
-    feature_rows: list = []
-    feature_vocab: dict = {}
+    num_encoders, cat_encoders, feature_extra = \
+        _build_encoders(num_pairs, num_max_bucket, cat_counts, total_rows, args.min_count)
+    del num_pairs, cat_counts
 
-    # I1-I13 数值特征
-    print(f"[criteo] encoding numeric features (signed_log1p_square_tokens)")
+    print(f"[criteo] Pass 2/2: encoding", flush=True)
+    encoded, labels = _pass2_encode(raw_tsv, total_rows, args.chunk_rows, num_encoders, cat_encoders)
+    del num_encoders, cat_encoders
+
+    df = pd.DataFrame(encoded, columns=NUM_COLS + CAT_COLS)
+    df["label"] = labels
+    del encoded, labels
+
+    qc = qc_gate(df)
+    print(f"[criteo] QC passed, shape={df.shape}, ctr={df['label'].mean():.6f}", flush=True)
+
+    missing_rate_raw = {col: col_missing[col] / total_rows for col in ALL_COLS_INPUT}
+    feature_rows = []
     for col in NUM_COLS:
-        encoded, token_vocab = encode_numeric_column_vectorized(df[col])
-        df[col] = encoded
         feature_rows.append({
             "feature": col,
             "type": "numeric_bucketed",
             "missing_rate_raw": missing_rate_raw[col],
+            "raw_unique_non_missing": int(df[col].nunique()),
+            "rare_rate": 0.0,
             "vocab_size_encoded": int(df[col].max()) + 1,
-            "bucket_vocab_before_encode": token_vocab,
+            "bucket_vocab_before_encode": feature_extra[col]["vocab"],
         })
-        feature_vocab[col] = int(df[col].max()) + 1
-
-    # C1-C26 类别特征
-    print(f"[criteo] encoding categorical features (min_count={args.min_count} rare-merging)")
     for col in CAT_COLS:
-        encoded, vocab_size, rare_rate = encode_categorical_with_rare(df[col], args.min_count)
-        df[col] = encoded
         feature_rows.append({
             "feature": col,
             "type": "categorical",
             "missing_rate_raw": missing_rate_raw[col],
-            "rare_rate": float(rare_rate),
-            "vocab_size_encoded": vocab_size,
+            "raw_unique_non_missing": feature_extra[col]["raw_unique"],
+            "rare_rate": float(feature_extra[col]["rare_rate"]),
+            "vocab_size_encoded": feature_extra[col]["vocab"],
+            "bucket_vocab_before_encode": None,
         })
-        feature_vocab[col] = vocab_size
 
-    df["label"] = df["label"].astype(np.int32)
-    df = df[NUM_COLS + CAT_COLS + ["label"]]                # 重排：label 末尾
-    qc = qc_gate(df)
-
-    # 输出
+    feature_vocab = {col: int(df[col].max()) + 1 for col in NUM_COLS + CAT_COLS}
     pkl_path = processed_dir / "data.pkl"
     meta_path = processed_dir / "data_meta.json"
     summary_path = processed_dir / "feature_summary.csv"
@@ -212,14 +294,21 @@ def main() -> int:
         "config": {
             "input_path": str(raw_tsv),
             "min_count": args.min_count,
+            "chunk_rows": args.chunk_rows,
             "numeric_bucket_impl": "signed_log1p_square_tokens",
             "column_order": NUM_COLS + CAT_COLS + ["label"],
+            "implementation": "chunked_two_pass",
+        },
+        "input_file": {
+            "size_bytes": int(input_stat.st_size),
+            "mtime": datetime.fromtimestamp(input_stat.st_mtime).isoformat(timespec="seconds"),
         },
         "dataset_summary": {
-            "rows": rows,
+            "rows": int(total_rows),
             "cols": 40,
             "ctr": float(df["label"].mean()),
             "label_pos": int(df["label"].sum()),
+            "label_neg": int(total_rows - int(df["label"].sum())),
             "missing_rate_raw": missing_rate_raw,
         },
         "feature_vocab": feature_vocab,
@@ -230,7 +319,7 @@ def main() -> int:
     }
     meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2))
 
-    print(f"[criteo] wrote {pkl_path} ({rows:,} rows, 39 sparse features)")
+    print(f"[criteo] wrote {pkl_path} ({total_rows:,} rows, 39 sparse features)")
     print(f"[criteo] wrote {meta_path}")
     print(f"[criteo] wrote {summary_path}")
     print(f"[criteo] field_index={FIELD_INDEX_CRITEO} → '{FIELD_NAME_CRITEO}', "
