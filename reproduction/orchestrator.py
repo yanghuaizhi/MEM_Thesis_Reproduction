@@ -130,7 +130,10 @@ def _build_pretrain_plan(configs: Dict[str, Any]) -> List[Dict[str, Any]]:
             "patience": backbone["patience"],
             "monitor": backbone["monitor"],
             "mode": backbone["mode"],
-            "num_workers": configs["hardware"]["rtx5090"]["dataloader"]["num_workers"],
+            "num_workers": configs["hardware"]["rtx5090"]["dataloader"].get(
+                "num_workers_pretrain",  # 优先 pretrain 专用（单任务，可上调）
+                configs["hardware"]["rtx5090"]["dataloader"]["num_workers"],
+            ),
             "pin_memory": configs["hardware"]["rtx5090"]["dataloader"]["pin_memory"],
             "persistent_workers": configs["hardware"]["rtx5090"]["dataloader"]["persistent_workers"],
             "prefetch_factor": configs["hardware"]["rtx5090"]["dataloader"].get("prefetch_factor"),  # H1 fix
