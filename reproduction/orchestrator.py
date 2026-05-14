@@ -431,6 +431,9 @@ def _parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
                    help="仅列任务，不启 subprocess")
     p.add_argument("--max-runs", type=int, default=None,
                    help="最多跑 N 个（调试用）")
+    p.add_argument("--parallel", type=int, default=1,
+                   help="并发任务数 (默认 1 = 串行；5090 32GB 显存可承载 3-5 并发，"
+                        "单 task 仅 ~3GB 显存)")
     return p.parse_args(argv)
 
 
@@ -483,6 +486,37 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 0
 
     failed = 0
+    if args.parallel > 1 and len(pending) > 1:
+        # 并发模式：用 ThreadPoolExecutor 同时启动 N 个 subprocess
+        # 每个 task 独立进程 + 独立 CUDA context，共享 GPU 但显存隔离
+        # 数值无影响（每个 task 内 setup_seed 独立）
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        n_par = min(args.parallel, len(pending))
+        print(f"\n[orchestrator] PARALLEL mode: {n_par} concurrent subprocesses on GPU")
+        print(f"[orchestrator] WARN: each task ~3GB GPU mem + ~500MB CUDA ctx; "
+              f"keep parallel ≤ 5 on 32GB GPU")
+        completed = 0
+        with ThreadPoolExecutor(max_workers=n_par) as ex:
+            futures = {
+                ex.submit(_launch_run, r, hw_cfg, False): r for r in pending
+            }
+            for fut in as_completed(futures):
+                r = futures[fut]
+                completed += 1
+                try:
+                    ok = fut.result()
+                except Exception as e:
+                    print(f"[orchestrator] EXC in {r}: {e}")
+                    ok = False
+                tag = f"{r['stage']}/{r['dataset']}/{r['method']}/seed_{r['seed']}"
+                status = "OK" if ok else "FAIL"
+                print(f"=== [{completed}/{len(pending)}] {status}: {tag} ===")
+                if not ok:
+                    failed += 1
+        print(f"\n[orchestrator] parallel done: {len(pending) - failed}/{len(pending)} OK, {failed} failed")
+        return 1 if failed else 0
+
+    # 串行模式（默认）
     for i, r in enumerate(pending, start=1):
         print(f"\n=== [{i}/{len(pending)}] {r['stage']}/{r['dataset']}/{r['method']}/seed_{r['seed']} ===")
         ok = _launch_run(r, hw_cfg=hw_cfg, dry_run=False)

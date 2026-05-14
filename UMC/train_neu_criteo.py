@@ -301,6 +301,7 @@ def trial(config_update):
         )
 
         # H2: precompute 用 eval_batch_size（默认 batch_size_calib × 4），仅前向无数值影响
+        # NOTE: calib 显存使用待 smoke verify 后可上调到 × 8
         _eval_bs_precompute = int(getattr(config, "eval_batch_size", None) or config.batch_size_calib * 4)
         print(f"precompute_valid_start  eval_batch_size={_eval_bs_precompute}")
         valid_logit, valid_u, valid_sigma2 = precompute_backbone_outputs(

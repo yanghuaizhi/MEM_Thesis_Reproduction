@@ -301,6 +301,8 @@ def trial(config_update):
 
     # --- Precompute backbone outputs (frozen model, deterministic) ---
     # H2: precompute 用 eval_batch_size（默认 batch_size_calib × 4），仅前向无数值影响
+    # NOTE: calib 阶段显存使用 = backbone + calibrator + precompute output cache
+    # 建议先用 1 个 calib smoke 实测后再上调到 × 8（5090 32GB 可能但需 verify）
     eval_bs = int(getattr(config, "eval_batch_size", None) or config.batch_size_calib * 4)
     print(f"precompute_valid_start  eval_batch_size={eval_bs}")
     valid_logit, valid_u, valid_sigma2 = precompute_backbone_outputs(

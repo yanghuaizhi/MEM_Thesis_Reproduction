@@ -20,7 +20,9 @@ dataloader:
   prefetch_factor: 4            # 预取 batch 数
 
 eval:
-  batch_size_multiplier: 4      # 推理 batch = batch_size_calib * 4（不影响数值）
+  batch_size_multiplier: 4      # 推理 batch = batch_size_calib * 4 (保守值, 数值无影响)
+  # NOTE: backbone pretrain 实测仅 2.6GB / 32GB 显存，calib 显存待 smoke verify 后
+  # 可上调到 8 进一步加速 (calib 显存 = backbone + calibrator + precompute cache)
 
 # Tier 2（近无关，需 smoke test 验证 |ΔECE| < 1e-5 后启用）
 precision:
