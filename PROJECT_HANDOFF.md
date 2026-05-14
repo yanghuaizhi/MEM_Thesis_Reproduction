@@ -1,7 +1,7 @@
 # PROJECT_HANDOFF.md — 30_reproduction 综合实施总结
 
 > **本文件是项目持久化交接文档**。下次会话从这里恢复，能完整理解项目状态而不依赖历史对话。
-> 最后更新：2026-05-14 16:00（**chain 5 阶段已 detach 在 tmux `mem` 内运行，约 25-30h 完成**）
+> 最后更新：2026-05-14 16:35（**chain v3 重启后用新 yaml 跑，预计省 2-3h**）
 
 ---
 
@@ -13,55 +13,56 @@
 请先 cd 到 /Users/y/Research_MEM/30_reproduction/，让项目 CLAUDE.md 加载，然后阅读
 PROJECT_HANDOFF.md（本文件）。
 
-当前状态（2026-05-14 16:00 启动）：
-- 远程 tmux session `mem` 内跑 5-stage chain (backbone → main smoke → main → v9 → v10)
-- chain_run.sh PID 在 /tmp/chain_run.sh，主 log 在 logs/chain_master.log
-- SSH **完全可用**（密码 + publickey 双因素已通过，mux master 在跑）
-- 三个修复 commit 已 push（1cf8bb4 / 896cff3 / 0e23329），远程已拉
+当前状态（2026-05-14 16:30 chain v3 重启）：
+- 远程 tmux session `mem` 内跑 chain v3（5-stage），主 log logs/chain_master_v3.log
+- 已 done: pretrain 3/3, main 5/99（含 1 smoke uamcm + 3 platt + 1 ir）
+- 新 yaml (prefetch=8 + eval_mul=8) 已在远程生效（scp 推送）
+- 4 个修复/优化 commit 已 push (70211cd / 0e23329 / 896cff3 / 1cf8bb4)
+- SSH 偶发 perm denied，有 expect 兜底脚本 /tmp/ssh-diag/probe.sh
 
-第一件事：检查 chain 进度
-  ssh paratera 'tail -30 /root/shared-nvme/30_reproduction/logs/chain_master.log'
-  ssh paratera 'find /root/shared-nvme/30_reproduction/experiments/runs -name done.flag | wc -l'
+第一件事：检查 chain 状态
+  bash /tmp/ssh-diag/probe.sh                                    # 一键查（expect 兜底）
+  # 或 ssh paratera 'tail -30 .../logs/chain_master_v3.log'      # mux 还活的话
 
-根据进度判断：
-  A. 还在跑 → 监控 + 解答问题，不要打断
-  B. 全部 done (chain_completed.flag 存在) → 进入 aggregate 阶段
-  C. 中间失败 → 看 logs/chain_master.log 末尾 "[chain] STAGE X FAILED"，--resume 重启
+根据进度判断（参考 §12 决策树）：
+  A. 还在跑 + 有 chain_run.sh 进程 → 监控不打断
+  B. 进程死但没 chain_completed.flag → 重启 chain (先 pkill 孤儿，再 tmux new + chain_run.sh)
+  C. 全部 done (chain_completed.flag 存在) → aggregate + paper_artifacts
+  D. 中间失败 → 看 chain_master_v3.log 末尾 [chain] STAGE X FAILED 行
 ```
 
 ---
 
 ## 0.5 当前状态速读（2026-05-14 16:00）
 
-### Chain 运行中
-- tmux session：**`mem`**（远程 `tmux attach -t mem` 可看）
-- launcher 脚本：`/tmp/chain_run.sh`（远程 tmpfs，容器重启会丢；可重新构造，逻辑见 §13.5）
-- 主 log：`/root/shared-nvme/30_reproduction/logs/chain_master.log`
+### Chain 运行中（**v3 — 16:30 重启后**）
+- tmux session：**`mem`**（`ssh -t paratera 'tmux attach -t mem'` 可看）
+- launcher 脚本：`/tmp/chain_run.sh`（容器 tmpfs，容器重启会丢；脚本见 §16）
+- 主 log：`/root/shared-nvme/30_reproduction/logs/chain_master_v3.log`（v1 v2 已废弃）
 - 5 个 stage chain 用 `&&` 串联，单点失败即停
+- **远程当前 yaml 是 prefetch=8 + eval_mul=8**（scp 推送，本地 commit 70211cd 已 push，远程因 GitHub 网络抖动用 scp 兜底）
 
-### Stage 进度（用 done.flag 计数）
-```
-ssh paratera 'echo pretrain:$(find .../runs/pretrain -name done.flag|wc -l)/3 ...'
-```
-| Stage | 任务 | 进度 |
-|------|------|------|
-| 1 backbone | 3 | 已 done 2/3 (aliccp+avazu), criteo 在 Epoch 7+ 训练中 |
-| 2 main smoke | 2 | 0/2 (待 backbone 完) |
-| 3 main 剩余 | 97 | 0/97 |
-| 4 v9 | 12 | 0/12 |
-| 5 v10 | 18 | 0/18 |
+### Stage 进度（截至 16:32）
+| Stage | 任务 | 进度 | 说明 |
+|------|------|------|------|
+| 1 backbone | 3 | **✓ 3/3** | aliccp/avazu (历史) + criteo (16:11 done, elapsed 909s) |
+| 2 main smoke | 2 | **进行中** | 第一次 STAGE 2 用旧 yaml 完成 platt × 2，重启 chain v3 STAGE 2 max-runs=2 在跑 ir_2024+3024（新 yaml）|
+| 3 main 剩余 | -- | **5/99 done** | uamcm_1024 (smoke) + platt × 3 seeds + ir_1024 |
+| 4 v9 | 12 | 0/12 | 等 STAGE 3 done |
+| 5 v10 | 18 | 0/18 | 等 STAGE 4 done |
 
-### 完成里程碑（参考时刻）
+### 完成里程碑（修正后）
 | 时刻 | 应看到 |
 |------|--------|
-| 16:21 ± | Criteo backbone done → STAGE 2 启动 |
-| 16:56 ± | main smoke 2 done → 关键防线通过 |
-| 次日 16:30 ± | chain 全部 done，`experiments/chain_completed.flag` 写入 |
+| 16:35 ± | STAGE 2 v3 ir × 2 done → STAGE 3 全 94 主任务（用新 yaml）|
+| 次日 12:00-14:00 ± | chain 全部 done，省 2-3h vs 原估 16:30 |
 
 ### 容错保证
 - 进度持久化到 `shared-nvme/.../done.flag`，**容器重启不丢**
 - 单 task 失败 ≤ 30 min 损失（其他 task 不受影响，`--resume` 接力）
 - tmux server 挂 → 跑完的 done.flag 仍在，重启 chain 用 `--resume` 跳过已 done
+- **重要**：tmux kill 不杀子进程（被 supervisord 接管成孤儿），需 `pkill -9 -f reproduction._runner` 显式杀
+- ssh 偶发 perm denied（mux 失效或 SSHPiper 限速），用 `/tmp/ssh-diag/probe.sh` 走 expect+keychain 兜底
 
 ---
 
@@ -427,6 +428,19 @@ open results/diff_audit/diff_with_v1_13.md
 ```bash
 # === 杀掉 chain（用户主动停） ===
 ssh paratera 'tmux kill-session -t mem'
+# ⚠️ 警告：tmux kill 不杀子进程！_runner 会变孤儿被 supervisord 接管继续跑
+# 必须同时 pkill 显式杀:
+ssh paratera 'tmux kill-session -t mem; sleep 2; pkill -9 -f "reproduction._runner"; sleep 2; ps -ef | grep _runner | grep -v grep'
+
+# === ssh 失败/mux 失效兜底（expect 注入密码）===
+bash /tmp/ssh-diag/probe.sh        # 一次性查远程状态
+
+# 或手动: 单条命令
+PWFILE=$(mktemp); chmod 600 $PWFILE; printf '%s' '7068b50ec5c14520720a976159f8fc00' > $PWFILE
+expect -c "set timeout 60; log_user 1; spawn ssh paratera <cmd>; expect -re {(?i)password:} {send \"$(cat $PWFILE)\r\"; exp_continue} eof {}"
+
+# === yaml 改了但 GitHub pull 失败：scp 兜底直接推 ===
+scp reproduction/configs/hardware/rtx5090.yaml paratera:/root/shared-nvme/30_reproduction/reproduction/configs/hardware/rtx5090.yaml
 
 # === 单独跑某阶段（chain 失败后用 --resume 接力） ===
 ssh -t paratera 'tmux new -A -s mem'
@@ -445,11 +459,14 @@ ssh paratera 'find /root/shared-nvme/30_reproduction/experiments/runs -name erro
 |------|------|
 | **chain Stage 2 main smoke 又挂死** | parallel=2 不够保守，降到 1 + num_workers=8。改 `scripts/run_main_experiments.sh` `PARALLEL_DEFAULT=2 → 1`。这是关键防线，挂了就停！别盲目重试 |
 | **某个 main task 出 NaN/Inf** | sanity_check 会标记。其他 task 不受影响，--resume 跳过 done 的，重跑出错的 |
-| **GPU OOM**（main calib 显存 >30GB）| 改 `hardware/rtx5090.yaml: eval.batch_size_multiplier: 4 → 2 或 1`。push + 远程 pull + `--resume` |
+| **GPU OOM**（main calib 显存 >30GB）| 改 `hardware/rtx5090.yaml: eval.batch_size_multiplier: 8 → 4 或 2`。push + 远程 pull (或 scp) + 重启 chain |
 | **vast 网络存储慢/不可用** | 等几分钟。如长时间不通，看 paratera 平台状态。data.pkl 已 load 到 RAM 不依赖 IO |
 | **容器被回收** | shared-nvme 保留 done.flag + 数据。重新申请同规格 + git clone + setup_env + 重建 /tmp/chain_run.sh + tmux new + chain --resume 续跑 |
 | **训练 NaN/Inf** | sanity_check 触发；查 train.log 看 grad |
 | **某 task fail** | `--resume` 自动跳过 done.flag 已存在的，仅重跑 failed/missing |
+| **想重启 chain 用新 yaml** | (a) push 本地 commit (b) 远程 `git pull` 或 scp 兜底 (c) `tmux kill-session -t mem && pkill -9 -f reproduction._runner` (d) `tmux new -A -s mem` 跑 chain。**关键**：必须显式 pkill，否则孤儿 _runner 撞 GPU |
+| **ssh perm denied (mux 失效)** | 删 `~/.ssh/control-*` 后用 `/tmp/ssh-diag/probe.sh`（expect 注入密码）。mux 重建后 10 min 内 `ssh paratera ...` 可直接复用 |
+| **GitHub pull 超时（130s+）**| scp 直接推改动文件，远程 yaml 与 git HEAD 内容一致即可。下次 pull 前可能需 `git reset --hard HEAD~N` 或 `git stash` 清远程 dirty 状态 |
 
 ---
 
@@ -457,22 +474,36 @@ ssh paratera 'find /root/shared-nvme/30_reproduction/experiments/runs -name erro
 
 ### 第一件事：检查 chain 状态
 
+**首选方式（mux 可能已失效，直接用 expect 兜底脚本）**：
 ```bash
-ssh paratera 'tail -30 /root/shared-nvme/30_reproduction/logs/chain_master.log'
+bash /tmp/ssh-diag/probe.sh        # 一键查 done.flag 计数 + GPU + 进程
+```
+
+**或手动 ssh（mux 还活的话）**：
+```bash
+ssh paratera 'tail -30 /root/shared-nvme/30_reproduction/logs/chain_master_v3.log'
 ssh paratera 'cd /root/shared-nvme/30_reproduction && \
   echo pretrain:$(find experiments/runs/pretrain -name done.flag|wc -l)/3 \
   main:$(find experiments/runs/main -name done.flag 2>/dev/null|wc -l)/99 \
   v9:$(find experiments/runs/v9 -name done.flag 2>/dev/null|wc -l)/12 \
   v10:$(find experiments/runs/v10 -name done.flag 2>/dev/null|wc -l)/18'
 ssh paratera 'test -f /root/shared-nvme/30_reproduction/experiments/chain_completed.flag && echo CHAIN_DONE || echo CHAIN_RUNNING_OR_FAILED'
+ssh paratera 'ps -ef | grep -E "chain_run|orchestrator|_runner" | grep -v grep | head -5'
 ```
 
 ### 按状态分支
 
-**A. chain 还在跑**（log 末尾无 STAGE FAILED + 无 chain_completed.flag）
+**A. chain 还在跑**（log 末尾无 STAGE FAILED + 无 chain_completed.flag + ps 有 chain_run.sh 进程）
 - 监控不打断，回答用户问题。chain 自己跑完。
+- ⚠️ 注意：log 是 `chain_master_v3.log`（v1 v2 已废弃，v3 是 16:30 重启版本）
 
-**B. chain 完成**（看到 `experiments/chain_completed.flag`）
+**B. chain 进程死了但没 chain_completed.flag**（**典型故障态**）
+- 看具体 done.flag 数：
+  - main < 99 → 重启 chain：`ssh -t paratera 'tmux new -A -s mem' && /tmp/chain_run.sh --resume`
+  - 重启前先 `pkill -9 -f reproduction._runner` 清孤儿
+- 看是否有 error.flag：`find experiments/runs -name error.flag -exec cat {} \;`
+
+**C. chain 完成**（看到 `experiments/chain_completed.flag`）
 - 跑 aggregate + paper_artifacts（CPU bound, <30min）：
   ```bash
   ssh paratera 'cd /root/shared-nvme/30_reproduction && bash scripts/aggregate_results.sh && bash scripts/generate_paper_artifacts.sh && git add results/ && git commit -m "results: chain done $(date +%Y%m%d)" && git push'
@@ -480,10 +511,11 @@ ssh paratera 'test -f /root/shared-nvme/30_reproduction/experiments/chain_comple
   ```
 - 让用户看 `results/diff_audit/diff_with_v1_13.md`，决定 v1.14 修订点
 
-**C. chain 中间失败**（log 末尾有 STAGE X FAILED）
+**D. chain 中间失败**（log 末尾有 STAGE X FAILED）
 - 根据 STAGE 号定位：
   - STAGE 1/2: 配置问题，看 train.log 末尾，可能 OOM 或 dataloader 问题
   - STAGE 3+: 个别 task 可能崩，多数 done.flag 已存在，--resume 接力
+- 修后在 tmux 内重启 chain 或单独跑剩余 stage
 - 修后在 tmux 内重启 chain 或单独跑剩余 stage
 
 ### B. 如果 smoke 已通过 + main 已启动
@@ -541,27 +573,45 @@ ssh paratera 'test -f /root/shared-nvme/30_reproduction/experiments/chain_comple
 | 15:44 | commit `0e23329`：pretrain 用 num_workers_pretrain=12（分场景 num_workers）|
 | 15:49 | 远程装 tmux 3.4 |
 | 15:54 | git checkout 恢复 main_99/v9/v10 yaml 含 criteo |
-| 15:56 | chain 5 stage 在 tmux `mem` 启动 |
-| 16:00 | Criteo backbone Epoch 7+/20，val_auc 0.8068 单调上升 |
+| 15:56 | chain v1 在 tmux `mem` 启动 |
+| 16:11 | **STAGE 1 done** Criteo backbone (elapsed 909s = 15min, 比预期 25min 早 40%) |
+| 16:16 | **STAGE 2 done** platt smoke × 2（5.6 min/task，比预期 35min 快 6x —— statistical 方法只 fit sigmoid）|
+| 16:16 | **STAGE 3 启动** main 99 全 task，但 orchestrator 已用旧 yaml build 99 个 run_config.json |
+| 16:23 | STAGE 3 in-flight: platt_3024 + ir_1024（用旧 yaml prefetch=4 + eval_mul=4） |
+| 16:26 | commit `70211cd`：prefetch 4→8, eval_mul 4→8 优化（零数值影响）|
+| 16:27 | 用户决策：重启 chain 让 STAGE 3 用新 yaml（净省 3-4h vs 损失 ~15min）|
+| 16:27 | `tmux kill-session -t mem` → **_runner 变孤儿被 supervisord PID 1470 接管，未死** |
+| 16:27-29 | ssh 突然 perm denied（mux 失效 + SSHPiper 偶发限制）|
+| 16:28-30 | 孤儿 _runner 自然跑完写 done.flag（statistical 5-6 min）|
+| 16:30 | chain v3 用 expect 重启成功，跳过 5 done (3 backbone + 2 platt v1) + 写新 run_config.json 用新 yaml |
+| 16:32 | chain v3 STAGE 2 跑 ir_2024 + ir_3024（**用新 yaml**），GPU 已激活到 4.3GB |
 
-### 三个新 commit（已 push）
+### 已落地 commit（4 个，全 push）
 ```
+70211cd opt: prefetch_factor 4→8 + eval batch_size_multiplier 4→8 (零数值影响加速)
 0e23329 opt: pretrain uses num_workers_pretrain=12 (main keeps 6)
 896cff3 fix: main/v9/v10 CPU starvation (parallel=4 × num_workers=12 = 52 process on 14 vCPU)
 1cf8bb4 fix: chunked Criteo preprocess (11G TSV hang on vast network storage)
 ```
+
+**注**：远程 yaml 因 GitHub 网络抖动 130s 超时 git pull 失败，**用 scp 直接推**绕过。远程当前 yaml 与本地 git HEAD 一致（同 70211cd 内容），但远程 working tree 显示 "modified"（与 last commit 哈希不同步）。下次远程 git pull 前需 `git reset --hard HEAD` 或 `git stash` 清状态。
 
 ### 重要事实修正（在 §4 已更新）
 - ~~"SSH 双因素 auth Claude 无法用，靠 WebSSH"~~ → SSH 完全可用（publickey + password mux master）
 - ~~"CPU/RAM 14vCPU/120GB"~~ → cgroup v2 limit: **14 vCPU quota / 100 GB RAM**（`nproc=128` 和 `free=1Ti` 是 host 不可信）
 - ~~"parallel=6 估 ~3h"~~ → parallel=4 已被证伪挂死；parallel=2 估 main **~20h**
 
-### 经验教训
+### 经验教训（10 条）
 1. **vast 网络存储 + 一次性大 IO 致 stdout 假死**：chunked + flush=True 解决
 2. **cgroup v2 OOM 不入 dmesg**：之前 parallel=4 挂死无 OOM 日志证据，但 RAM cgroup 100GB 估算 4 task × 8G + 48 worker copy 确有撞墙嫌疑
 3. **`nproc` / `free -h` 在容器内不反映 cgroup 限制**：必查 `cpu.max` 和 `memory.max`
 4. **PyTorch DataLoader fork + persistent_workers + parallel 多进程是组合炸弹**：单进程 num_workers=12 OK，4 parallel × num_workers=12 = 死
 5. **MFA 服务端（SSHPiper）会反复跟客户端打 "partial success" 协议**：BatchMode=yes 会让 publickey-only 卡住，需要 password 兜底
+6. **statistical method 比 neural 快 5-10x**：platt/ir/hb 只 fit sigmoid，5-6 min/task；neural 30 min/task。99 task 中 27 个 statistical 会大幅拉低平均时长
+7. **orchestrator 写 run_config.json 是 eager**：build_plan 时全 99 个 run_config 已写盘；重启 orchestrator 才会重新读 yaml + 重写
+8. **`tmux kill-session` 不杀子进程**：bash 子进程 SIGHUP → orchestrator 死 → 但 _runner 被 supervisord（PID 1) 接管成孤儿。需 `pkill -9 -f reproduction._runner` 显式杀
+9. **ssh mux 可能失效**：~/.ssh/config 全局 `Host * ControlMaster auto ControlPath ~/.ssh/control-%C ControlPersist 10m` 让 mux 持续 10min。失效后用 `/tmp/ssh-diag/probe.sh`（expect 兜底注入密码）
+10. **GitHub 偶发 130s 超时**：scp 兜底直接推 yaml 文件到远程，绕过 git pull
 
 ---
 
