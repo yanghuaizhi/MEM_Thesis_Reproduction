@@ -71,6 +71,7 @@ class Config(object):
         self.num_workers = 8
         self.pin_memory = True
         self.persistent_workers = True
+        self.prefetch_factor = None    # H1: None → use DataLoader default (2)
         self.ece_M = 100
         self.calib_reg_num_bins = 10
         self.calib_log_every = 200
@@ -374,6 +375,7 @@ def trial(config_update):
         num_workers=int(config.num_workers),
         pin_memory=bool(config.pin_memory),
         persistent_workers=bool(config.persistent_workers and int(config.num_workers) > 0),
+        **({"prefetch_factor": int(config.prefetch_factor)} if (getattr(config, "prefetch_factor", None) and int(config.num_workers) > 0) else {}),
         generator=torch.Generator().manual_seed(calib_seed),
     )
     test_tensor_data = Data.TensorDataset(
@@ -386,6 +388,7 @@ def trial(config_update):
         num_workers=int(config.num_workers),
         pin_memory=bool(config.pin_memory),
         persistent_workers=bool(config.persistent_workers and int(config.num_workers) > 0),
+        **({"prefetch_factor": int(config.prefetch_factor)} if (getattr(config, "prefetch_factor", None) and int(config.num_workers) > 0) else {}),
     )
     print(
         f"cached_dataloaders valid_batches={len(valid_loader)} test_batches={len(test_loader)}"

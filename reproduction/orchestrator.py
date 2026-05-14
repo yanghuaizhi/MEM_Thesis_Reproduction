@@ -133,6 +133,7 @@ def _build_pretrain_plan(configs: Dict[str, Any]) -> List[Dict[str, Any]]:
             "num_workers": configs["hardware"]["rtx5090"]["dataloader"]["num_workers"],
             "pin_memory": configs["hardware"]["rtx5090"]["dataloader"]["pin_memory"],
             "persistent_workers": configs["hardware"]["rtx5090"]["dataloader"]["persistent_workers"],
+            "prefetch_factor": configs["hardware"]["rtx5090"]["dataloader"].get("prefetch_factor"),  # H1 fix
         }
         runs.append(
             {
@@ -232,6 +233,7 @@ def _build_calib_config_update(
         "num_workers": hw["dataloader"]["num_workers"],
         "pin_memory": hw["dataloader"]["pin_memory"],
         "persistent_workers": hw["dataloader"]["persistent_workers"],
+        "prefetch_factor": hw["dataloader"].get("prefetch_factor"),    # H1 fix: 注入
     }
     # 方法超参（仅神经方法有 calib hyperparameters）
     if mcfg["type"] != "statistical":
