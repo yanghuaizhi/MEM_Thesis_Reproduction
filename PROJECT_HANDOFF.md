@@ -1,7 +1,7 @@
 # PROJECT_HANDOFF.md — 30_reproduction 综合实施总结
 
 > **本文件是项目持久化交接文档**。下次会话从这里恢复，能完整理解项目状态而不依赖历史对话。
-> 最后更新：2026-05-14 16:35（**chain v3 重启后用新 yaml 跑，预计省 2-3h**）
+> 最后更新：2026-05-14 16:45（**复现数据 vs 论文/历史三方对账：完美对齐（<1% 偏差），chain 健康跑**）
 
 ---
 
@@ -63,6 +63,20 @@ PROJECT_HANDOFF.md（本文件）。
 - tmux server 挂 → 跑完的 done.flag 仍在，重启 chain 用 `--resume` 跳过已 done
 - **重要**：tmux kill 不杀子进程（被 supervisord 接管成孤儿），需 `pkill -9 -f reproduction._runner` 显式杀
 - ssh 偶发 perm denied（mux 失效或 SSHPiper 限速），用 `/tmp/ssh-diag/probe.sh` 走 expect+keychain 兜底
+
+### 数据健康度（2026-05-14 16:45 三方对账已验证 ✓）
+
+5 个 AliCCP main task 完成（platt × 3 seeds, ir × 3 seeds, uamcm/1024 smoke），**与论文 v1.13 + 历史 v7_supp CSV 完美对齐**：
+
+| Method | 复现 ECE | 历史 v7_supp | 论文（×10³）| 偏差 |
+|--------|---------|-------------|------------|------|
+| platt | 0.008119 | 0.008164 | 8.16 | -0.55% ✓ |
+| ir | 0.007929 | 0.007960 | 7.96 | -0.39% ✓ |
+| uamcm | 0.007808 | 0.007375 (3 seed mean) | 7.38±0.65 | +5.9% (1σ 内) ✓ |
+
+**⚠️ 单位陷阱**：论文 ECE 是 **×10³ 报告**（ch4_method.md 4.6 节），复现 metrics.jsonl 是原始小数。对比公式：`论文报告值 × 10⁻³ ≈ 复现值`。误用单位 → 假装差 10x。详见 `docs/06_paper_diff_audit.md §0`。
+
+LogLoss/AUC 三方偏差 < 0.2%（这两个无单位换算）。
 
 ---
 
@@ -467,6 +481,7 @@ ssh paratera 'find /root/shared-nvme/30_reproduction/experiments/runs -name erro
 | **想重启 chain 用新 yaml** | (a) push 本地 commit (b) 远程 `git pull` 或 scp 兜底 (c) `tmux kill-session -t mem && pkill -9 -f reproduction._runner` (d) `tmux new -A -s mem` 跑 chain。**关键**：必须显式 pkill，否则孤儿 _runner 撞 GPU |
 | **ssh perm denied (mux 失效)** | 删 `~/.ssh/control-*` 后用 `/tmp/ssh-diag/probe.sh`（expect 注入密码）。mux 重建后 10 min 内 `ssh paratera ...` 可直接复用 |
 | **GitHub pull 超时（130s+）**| scp 直接推改动文件，远程 yaml 与 git HEAD 内容一致即可。下次 pull 前可能需 `git reset --hard HEAD~N` 或 `git stash` 清远程 dirty 状态 |
+| **diff_with_paper 看起来差 10x** | 检查 ECE 单位换算！论文 ×10³，复现原始小数。`论文 × 10⁻³ ≈ 复现`。详见 docs/06_paper_diff_audit.md §0 |
 
 ---
 
@@ -601,7 +616,7 @@ ssh paratera 'ps -ef | grep -E "chain_run|orchestrator|_runner" | grep -v grep |
 - ~~"CPU/RAM 14vCPU/120GB"~~ → cgroup v2 limit: **14 vCPU quota / 100 GB RAM**（`nproc=128` 和 `free=1Ti` 是 host 不可信）
 - ~~"parallel=6 估 ~3h"~~ → parallel=4 已被证伪挂死；parallel=2 估 main **~20h**
 
-### 经验教训（10 条）
+### 经验教训（11 条）
 1. **vast 网络存储 + 一次性大 IO 致 stdout 假死**：chunked + flush=True 解决
 2. **cgroup v2 OOM 不入 dmesg**：之前 parallel=4 挂死无 OOM 日志证据，但 RAM cgroup 100GB 估算 4 task × 8G + 48 worker copy 确有撞墙嫌疑
 3. **`nproc` / `free -h` 在容器内不反映 cgroup 限制**：必查 `cpu.max` 和 `memory.max`
@@ -612,6 +627,7 @@ ssh paratera 'ps -ef | grep -E "chain_run|orchestrator|_runner" | grep -v grep |
 8. **`tmux kill-session` 不杀子进程**：bash 子进程 SIGHUP → orchestrator 死 → 但 _runner 被 supervisord（PID 1) 接管成孤儿。需 `pkill -9 -f reproduction._runner` 显式杀
 9. **ssh mux 可能失效**：~/.ssh/config 全局 `Host * ControlMaster auto ControlPath ~/.ssh/control-%C ControlPersist 10m` 让 mux 持续 10min。失效后用 `/tmp/ssh-diag/probe.sh`（expect 兜底注入密码）
 10. **GitHub 偶发 130s 超时**：scp 兜底直接推 yaml 文件到远程，绕过 git pull
+11. **论文 ECE 单位是 `×10³`**（ch4_method.md 4.6 节明确："ECE 取 ×10³ 报告"），复现 metrics.jsonl 是原始小数。对比时必须做 `论文报告值 × 10⁻³ ≈ 复现值` 换算。否则 ECE 7.38 vs 0.0078 看起来差 10x，实际完全对齐。**`diff_with_paper.py` 必须实现此换算**。详见 `docs/06_paper_diff_audit.md §0`
 
 ---
 

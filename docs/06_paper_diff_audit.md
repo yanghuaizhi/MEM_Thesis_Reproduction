@@ -3,6 +3,34 @@
 > 本文档跑完阶段 8 `bash scripts/generate_paper_artifacts.sh` 后自动汇总。
 > 是 v1.14 论文修订的**唯一权威依据**（plan §K.2 关键纪律：禁止跳过本审计直接 cp 表格）。
 
+## 0. 单位约定（CRITICAL，对比前必读）
+
+**论文 v1.13 ECE 报告单位 = `×10³`**（ch4_method.md 4.6 节明确："ECE（Expected Calibration Error，**取 ×10³ 报告**），衡量预测概率与实际频率的平均偏差"）。
+
+**复现 metrics.jsonl ECE 单位 = 原始小数**（UMC `utils/metric.py` 直接输出 0.0xxx 形式）。
+
+**对比公式**：
+```
+论文报告 ECE × 10⁻³ ≈ 复现 metrics.jsonl ECE
+```
+
+具体例：
+- 论文报告 "UAMCM AliCCP ECE 7.38±0.65" → 实际值 0.00738 ± 0.00065
+- 复现 `experiments/runs/main/aliccp/uamcm/seed_1024/metrics.jsonl` `ece=0.007808` → ×10³ 后 = **7.81**
+- 偏差 5.9%（在 1σ 内）→ supports
+
+**`diff_with_paper.py` 必须做这个单位换算**，否则会误判 10x 偏差。
+
+### 2026-05-14 16:00 AliCCP 三方对账示例（已验证）
+
+| Method | 复现 ECE（小数）| 历史 v7_supp ECE（小数）| 论文 v1.13（×10³）| 偏差 |
+|--------|---------------|----------------------|------------------|------|
+| platt | 0.008119 | 0.008164 | 8.16 | -0.55% ✓ |
+| ir | 0.007929 | 0.007960 | 7.96 | -0.39% ✓ |
+| uamcm | 0.007808 | 0.007375 (3 seed mean) | 7.38±0.65 | +5.9% (1σ 内) ✓ |
+
+LogLoss 偏差 < 0.1%、AUC 偏差 < 0.2%（这两个不需要单位换算，是原始数）。
+
 ## 1. 当前状态
 
 复现未开始。本文档结构已就绪，待数据生成后由 `diff_with_paper.py` 自动填充。
