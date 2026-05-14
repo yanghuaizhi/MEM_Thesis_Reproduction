@@ -482,6 +482,7 @@ ssh paratera 'find /root/shared-nvme/30_reproduction/experiments/runs -name erro
 | **ssh perm denied (mux 失效)** | 删 `~/.ssh/control-*` 后用 `/tmp/ssh-diag/probe.sh`（expect 注入密码）。mux 重建后 10 min 内 `ssh paratera ...` 可直接复用 |
 | **GitHub pull 超时（130s+）**| scp 直接推改动文件，远程 yaml 与 git HEAD 内容一致即可。下次 pull 前可能需 `git reset --hard HEAD~N` 或 `git stash` 清远程 dirty 状态 |
 | **diff_with_paper 看起来差 10x** | 检查 ECE 单位换算！论文 ×10³，复现原始小数。`论文 × 10⁻³ ≈ 复现`。详见 docs/06_paper_diff_audit.md §0 |
+| **ls/find 输出"少了文件"** | 先看 `ls -la` 第一行 `total N`：N × 512B 应当匹配实际文件总字节。若 N 远大于看到的文件大小之和（如 total 44 但只列 1 个 118B 文件），**几乎一定是输出被自己的 `head -N` / pipe buffer 截断**，不是文件系统异常。重跑去掉 head、或用 `wc -l` 先确认总行数 |
 
 ---
 
@@ -600,6 +601,12 @@ ssh paratera 'ps -ef | grep -E "chain_run|orchestrator|_runner" | grep -v grep |
 | 16:28-30 | 孤儿 _runner 自然跑完写 done.flag（statistical 5-6 min）|
 | 16:30 | chain v3 用 expect 重启成功，跳过 5 done (3 backbone + 2 platt v1) + 写新 run_config.json 用新 yaml |
 | 16:32 | chain v3 STAGE 2 跑 ir_2024 + ir_3024（**用新 yaml**），GPU 已激活到 4.3GB |
+| 16:45 | 三方对账完成（复现 ECE 0.0079 ≈ 论文 ×10³ 报告 7.96，偏差 < 1%），数据健康验证 |
+| 17:18 | 用户提问"cron 是否触发"——核查 JSONL 显示 17:13 窗口未触发（REPL idle 22min 仍无 fire），原因不明，删除 cron 改回手动 |
+| 17:25 | umnn aliccp seed_1024 完成（elapsed 44min, 比 statistical 慢 8x）|
+| 17:33 | **`tmux pipe-pane -t mem 'cat >> experiments/chain.log'` 启用**，chain-level 进度落盘 |
+| 17:34 | 误报"umnn seed_1024 目录只剩 done.flag"——根因是我自己 `head -40` 切掉了 ls 后半 5 行；`total 44` 与单个 118B 文件矛盾本应当场触发警觉 |
+| 17:38 | main 进度 12/99（aliccp uamcm 1 + umnn 2 + statistical 9），umnn seed_3024 in-flight |
 
 ### 已落地 commit（4 个，全 push）
 ```
@@ -616,7 +623,7 @@ ssh paratera 'ps -ef | grep -E "chain_run|orchestrator|_runner" | grep -v grep |
 - ~~"CPU/RAM 14vCPU/120GB"~~ → cgroup v2 limit: **14 vCPU quota / 100 GB RAM**（`nproc=128` 和 `free=1Ti` 是 host 不可信）
 - ~~"parallel=6 估 ~3h"~~ → parallel=4 已被证伪挂死；parallel=2 估 main **~20h**
 
-### 经验教训（11 条）
+### 经验教训（12 条）
 1. **vast 网络存储 + 一次性大 IO 致 stdout 假死**：chunked + flush=True 解决
 2. **cgroup v2 OOM 不入 dmesg**：之前 parallel=4 挂死无 OOM 日志证据，但 RAM cgroup 100GB 估算 4 task × 8G + 48 worker copy 确有撞墙嫌疑
 3. **`nproc` / `free -h` 在容器内不反映 cgroup 限制**：必查 `cpu.max` 和 `memory.max`
@@ -628,6 +635,7 @@ ssh paratera 'ps -ef | grep -E "chain_run|orchestrator|_runner" | grep -v grep |
 9. **ssh mux 可能失效**：~/.ssh/config 全局 `Host * ControlMaster auto ControlPath ~/.ssh/control-%C ControlPersist 10m` 让 mux 持续 10min。失效后用 `/tmp/ssh-diag/probe.sh`（expect 兜底注入密码）
 10. **GitHub 偶发 130s 超时**：scp 兜底直接推 yaml 文件到远程，绕过 git pull
 11. **论文 ECE 单位是 `×10³`**（ch4_method.md 4.6 节明确："ECE 取 ×10³ 报告"），复现 metrics.jsonl 是原始小数。对比时必须做 `论文报告值 × 10⁻³ ≈ 复现值` 换算。否则 ECE 7.38 vs 0.0078 看起来差 10x，实际完全对齐。**`diff_with_paper.py` 必须实现此换算**。详见 `docs/06_paper_diff_audit.md §0`
+12. **诊断命令的输出截断会伪造文件系统异常**：2026-05-14 17:34 我用 `bash probe.sh | sed | head -40` 看 umnn 目录，head 刚好切在 `done.flag` 那行，下面 5 个真实存在的文件（train.log/metrics.jsonl/uncertainty_bins.csv/.../ece_best.csv）被吃掉，导致我误报"训练日志被清掉"。**`ls -la` 第一行 `total N` 是铁证**：N × 512B 应当等于目录内容总字节；total 44 ≈ 22 KB，而单个 118 B done.flag 应该 total 4 或 8——两数一眼矛盾就该立刻怀疑输出截断而不是文件系统。**自检规则**：用 head 切 ssh 输出时，N 必须大于预期行数 + 安全余量；或先 `wc -l` 看总行数；或直接不 head。「数据极端值警觉」反过来用：自己看到的数和元信息矛盾时，先怀疑自己的工具链。
 
 ---
 
