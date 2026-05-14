@@ -14,7 +14,10 @@ target_gpu:
 
 # Tier 1（完全安全，必做）
 dataloader:
-  num_workers: 12               # 14 vCPU 留 2 给主进程 + system
+  num_workers: 6                # 配 --parallel 2: 2×6 worker + 2 主进程 = 14 vCPU 刚好打满
+                                # 原值 12 在 --parallel 4 时撞 14 vCPU (4×12+4=52 process)，
+                                # 实测 2026-05-14 14:36 load avg 14.98 全部 dataloader 排队死锁。
+                                # 单任务 (parallel=1) 时 6 vs 12 worker 在 14 vCPU 满载下吞吐相当。
   pin_memory: true
   persistent_workers: true      # 减少 worker 重建开销
   prefetch_factor: 4            # 预取 batch 数
