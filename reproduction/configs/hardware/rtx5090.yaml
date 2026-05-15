@@ -14,10 +14,11 @@ target_gpu:
 
 # Tier 1（完全安全，必做）
 dataloader:
-  num_workers: 6                # 配 --parallel 2: 2×6 worker + 2 主进程 = 14 vCPU 刚好打满
-                                # 原值 12 在 --parallel 4 时撞 14 vCPU (4×12+4=52 process)，
-                                # 实测 2026-05-14 14:36 load avg 14.98 全部 dataloader 排队死锁。
-                                # 单任务 (parallel=1) 时 6 vs 12 worker 在 14 vCPU 满载下吞吐相当。
+  num_workers: 12               # Plan B 2026-05-15: parallel=1 阶段提升到 12 (1 main + 12 worker = 13 < 14 vCPU)
+                                # 原值 6 是为 --parallel 2 设计 (2×6+2=14)；当前 Plan B 用 parallel=1 故可拉满
+                                # 历史 2026-05-14 14:36 parallel=4 × num_workers=12 因 4×12+4=52 撞墙 → 当时降到 6
+                                # 现在 parallel=1 × num_workers=12 = 13 procs 安全；DataLoader 不卡 GPU
+                                # NOTE: v9/v10 切回 parallel=2 前需 chain script 自动 sed 改回 6
   num_workers_pretrain: 12      # pretrain 是单任务 (orchestrator parallel=1)，可用 12 worker
                                 # 跑满 13/14 vCPU。AliCCP/Avazu 历史 backbone 用 12 跑通 17min/5min。
   pin_memory: true

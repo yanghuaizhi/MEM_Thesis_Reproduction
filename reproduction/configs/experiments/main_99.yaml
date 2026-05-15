@@ -37,9 +37,9 @@ methods:
   - desc
   - sbcr
   - umc
-  - umc_wor
-  - uamcm
-  - uamcm_wor
+  # - umc_wor                 # Plan B 2026-05-15: aliccp+criteo 上 OOM (parallel=2 + bs_calib=65536)
+  - uamcm                     # _WOR 是 ablation 性质，§4.7 _WOR 行回写论文时沿用 v7_supp 历史值
+  # - uamcm_wor               # avazu 上的 _WOR 已 3 seed 完成，保留
 
 # 全局评估配置
 evaluation:
